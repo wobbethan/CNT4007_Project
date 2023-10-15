@@ -27,28 +27,31 @@ public class Client {
 			//get Input from standard input
 			BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(System.in));
 			
-			System.out.println("Enter ID: ");
+			System.out.print("Enter ID: "); //Enter ID
 			String peerID = bufferedReader.readLine();
-			Handshake clientSide = new Handshake(Integer.valueOf(peerID));
-			while(true)
-			{
-				System.out.print("Hello, please input a sentence: ");
-				//read a sentence from the standard input
-				message = bufferedReader.readLine();
-				//Send the sentence to the server
-				sendMessage(message);
-				//Receive the upperCase sentence from the server
-				MESSAGE = (String)in.readObject();
-				//show the message to the user
-				System.out.println("Receive message: " + MESSAGE);
+			Handshake clientSide = new Handshake(Integer.valueOf(peerID)); //Create Handshake
+			sendHandshake(clientSide); //Send Handshake
+
+			Handshake serverSide = (Handshake)in.readObject(); //Receive Handshake back from Server
+			if(clientSide.handshakeBytes[0] == 0){ //Validate Handshake by checking header, zero bits, and ID == 0000
+				//throw exeception if invalid
 			}
+			ArrayList<String> connectionsList = (ArrayList<String>)in.readObject();//Receive List of connections to server
+			//Print Connections
+			System.out.println("Successfully Connected to Server");
+			System.out.println("Clients connected to Server: "); //Enter ID
+			for (int i = 0; i < connectionsList.size(); i++) { 		      
+				System.out.println( (i+1) +": "+ connectionsList.get(i)); 		
+			} 
+			//Messages
+
 		}
 		catch (ConnectException e) {
     			System.err.println("Connection refused. You need to initiate a server first.");
 		} 
 		catch ( ClassNotFoundException e ) {
             		System.err.println("Class not found");
-        	} 
+        } 
 		catch(UnknownHostException unknownHost){
 			System.err.println("You are trying to connect to an unknown host!");
 		}
@@ -73,6 +76,18 @@ public class Client {
 		try{
 			//stream write the message
 			out.writeObject(msg);
+			out.flush();
+		}
+		catch(IOException ioException){
+			ioException.printStackTrace();
+		}
+	}
+
+	//send a handshake
+	void sendHandshake(Handshake hs)
+	{
+		try{
+			out.writeObject(hs);
 			out.flush();
 		}
 		catch(IOException ioException){
