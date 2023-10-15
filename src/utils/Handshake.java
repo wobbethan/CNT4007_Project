@@ -1,3 +1,5 @@
+package utils;
+import java.io.*;
 public class Handshake {
     
     public byte[] handshakeBytes = new byte[32];
@@ -5,5 +7,7 @@ public class Handshake {
     public Handshake (int peerID){
         String handshake = "P2PFILESHARINGPROJ" + "0000000000" + Integer.toString(peerID);
         handshakeBytes = handshake.getBytes();
+        System.out.print(handshake);
+
     }
 }

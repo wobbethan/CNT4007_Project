@@ -3,7 +3,7 @@ import java.io.*;
 import java.nio.*;
 import java.nio.channels.*;
 import java.util.*;
-
+import utils.Handshake;
 public class Client {
 	Socket requestSocket;           //socket connect to the server
 	ObjectOutputStream out;         //stream write to the socket
@@ -26,6 +26,10 @@ public class Client {
 			
 			//get Input from standard input
 			BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(System.in));
+			
+			System.out.println("Enter ID: ");
+			String peerID = bufferedReader.readLine();
+			Handshake clientSide = new Handshake(Integer.valueOf(peerID));
 			while(true)
 			{
 				System.out.print("Hello, please input a sentence: ");
