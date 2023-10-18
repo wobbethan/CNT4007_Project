@@ -1,2 +1,2 @@
 #Ignore all .class files created by javac
-*.class
+**/*.class
