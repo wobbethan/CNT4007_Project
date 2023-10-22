@@ -1,3 +1,4 @@
+package FileIO;
 
 import java.io.*;
 import java.util.Properties;
@@ -24,13 +25,13 @@ public class CommonParser {
     public int getOptimisticInterval(){
         return optimisticUnchokingInterval;
     }
-    public String fileName(){
+    public String getFileName(){
         return fileName;
     }
-    public int fileSize(){
+    public int getFileSize(){
         return fileSize;
     }
-    public int pieceSize(){
+    public int getPieceSize(){
         return pieceSize;
     }
 
@@ -39,7 +40,7 @@ public class CommonParser {
     public void read(){
         Properties commonCfg = new Properties();
 
-        try(FileInputStream fileInput = new FileInputStream("code\\CNT4007_Project\\Canvas\\Project\\project_config_file_"+configType+"\\project_config_file_"+configType+"\\Common.cfg")) {
+        try(FileInputStream fileInput = new FileInputStream("Canvas\\Project\\project_config_file_small\\project_config_file_small\\Common.cfg")) {
 
             commonCfg.load(fileInput);
             this.numPreferredNeighbors = Integer.parseInt(commonCfg.getProperty("NumberOfPreferredNeighbors"));
