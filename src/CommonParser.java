@@ -9,6 +9,11 @@ public class CommonParser {
     private String fileName;
     private int fileSize;
     private int pieceSize;
+    private String configType;
+
+    public CommonParser(String type){
+        this.configType = type;
+    }
 
     public int getNumNeighbors(){
         return numPreferredNeighbors;
@@ -29,17 +34,15 @@ public class CommonParser {
         return pieceSize;
     }
 
-
-    //May need setter functions ;)
     
+
     public void read(){
         Properties commonCfg = new Properties();
 
-
-        try(FileInputStream fileInput = new FileInputStream("Canvas\\Project\\project_config_file_small\\project_config_file_small\\Common.cfg")) { //maybe wrong file path
+        try(FileInputStream fileInput = new FileInputStream("code\\CNT4007_Project\\Canvas\\Project\\project_config_file_"+configType+"\\project_config_file_"+configType+"\\Common.cfg")) {
 
             commonCfg.load(fileInput);
-            this.numPreferredNeighbors = Integer.parseInt(commonCfg.getProperty("NumberOfPreferredNeighbors")); //extract preferred Neighbors and assign
+            this.numPreferredNeighbors = Integer.parseInt(commonCfg.getProperty("NumberOfPreferredNeighbors"));
             this.unchokingInterval = Integer.parseInt(commonCfg.getProperty("UnchokingInterval"));
             this.optimisticUnchokingInterval = Integer.parseInt(commonCfg.getProperty("OptimisticUnchokingInterval"));
             this.fileName = commonCfg.getProperty("FileName");
@@ -60,7 +63,7 @@ public class CommonParser {
         System.out.println("Number of preferred neighbors: " + numPreferredNeighbors);
         System.out.println("UnChoking Interval: " + unchokingInterval);
         System.out.println("Optimistic Interval: " + optimisticUnchokingInterval);
-        System.out.println("Filename: " + this.fileName);
+        System.out.println("Filename: " + fileName);
         System.out.println("File Size: " + fileSize);
         System.out.println("Piece Size: " + pieceSize);
         System.out.println("-----------------------------------------");
@@ -68,9 +71,13 @@ public class CommonParser {
     }
 
     //public static void main(String[] args){ //Internal Main for testing
-    //    CommonParser testParser = new CommonParser();
-    //    testParser.read();
-    //    testParser.testParser();
+    //    CommonParser testParserSmall = new CommonParser("small");
+    //    testParserSmall.read();
+    //    testParserSmall.testParser();
+    //
+    //    CommonParser testParserLarge = new CommonParser("large");
+    //    testParserLarge.read();
+    //    testParserLarge.testParser();
     //
     //}
     
