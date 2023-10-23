@@ -1,4 +1,4 @@
-//package Threads;
+package Threads;
 import java.net.*;
 import java.io.*;
 import java.nio.*;
@@ -12,10 +12,10 @@ public class Client extends Thread {
     String message;
     String MESSAGE;
 
-    void run(){
+    public void run(){
         try{
             requestSocket = new Socket("localhost", 8000);
-            System.out.println("Connected to localhost in port" + requestSocket.port);
+            System.out.println("Connected to localhost in port" + requestSocket.getPort());
             //initialize input and output stream
             out = new ObjectOutputStream(requestSocket.getOutputStream());
             out.flush(); // clears the output stream. 
@@ -28,11 +28,11 @@ public class Client extends Thread {
         catch (ConnectException e){
             System.err.println("Connection refused. You need to initiate a server first.");
         }
-        catch (ClassNotFoundException e){
-            System.err.println("Class not found.");
-        }
+
         catch(UnknownHostException unknownHost){
             System.err.println("You are trying to connect to an unknown host!"); 
+        } catch (IOException e) {
+            e.printStackTrace();
         }
         finally{ // Close connection
 
@@ -61,3 +61,4 @@ public class Client extends Thread {
         Client client = new Client();
         client.run();
     }
+}
