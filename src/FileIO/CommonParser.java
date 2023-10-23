@@ -12,36 +12,45 @@ public class CommonParser {
     private int pieceSize;
     private String configType;
 
-    public CommonParser(String type){
+    public CommonParser(String type) {
         this.configType = type;
     }
 
-    public int getNumNeighbors(){
+    public int getNumNeighbors() {
         return numPreferredNeighbors;
     }
-    public int getUnchokingInterval(){
+
+    public int getUnchokingInterval() {
         return unchokingInterval;
     }
-    public int getOptimisticInterval(){
+
+    public int getOptimisticInterval() {
         return optimisticUnchokingInterval;
     }
-    public String getFileName(){
+
+    public String getFileName() {
         return fileName;
     }
-    public int getFileSize(){
+
+    public int getFileSize() {
         return fileSize;
     }
-    public int getPieceSize(){
+
+    public int getPieceSize() {
         return pieceSize;
     }
 
-    
-
-    public void read(){
+    public void read() {
         Properties commonCfg = new Properties();
 
-        try(FileInputStream fileInput = new FileInputStream("Canvas\\Project\\project_config_file_small\\project_config_file_small\\Common.cfg")) {
+        String filePathFromRoot = "/project_config_file_" + configType + "/project_config_file_" + configType
+                + "/Common.cfg";
 
+        try {
+            FileInputStream fileInput = new FileInputStream(
+                    new File(System.getProperty("user.dir")).getParent() + filePathFromRoot);
+
+                    
             commonCfg.load(fileInput);
             this.numPreferredNeighbors = Integer.parseInt(commonCfg.getProperty("NumberOfPreferredNeighbors"));
             this.unchokingInterval = Integer.parseInt(commonCfg.getProperty("UnchokingInterval"));
@@ -49,7 +58,6 @@ public class CommonParser {
             this.fileName = commonCfg.getProperty("FileName");
             this.fileSize = Integer.parseInt(commonCfg.getProperty("FileSize"));
             this.pieceSize = Integer.parseInt(commonCfg.getProperty("PieceSize"));
-
 
         } catch (FileNotFoundException ex) {
             System.out.println("File not found");
@@ -71,17 +79,15 @@ public class CommonParser {
 
     }
 
-    //public static void main(String[] args){ //Internal Main for testing
-    //    CommonParser testParserSmall = new CommonParser("small");
-    //    testParserSmall.read();
-    //    testParserSmall.testParser();
+    // public static void main(String[] args){ //Internal Main for testing
+    // CommonParser testParserSmall = new CommonParser("small");
+    // testParserSmall.read();
+    // testParserSmall.testParser();
     //
-    //    CommonParser testParserLarge = new CommonParser("large");
-    //    testParserLarge.read();
-    //    testParserLarge.testParser();
+    // CommonParser testParserLarge = new CommonParser("large");
+    // testParserLarge.read();
+    // testParserLarge.testParser();
     //
-    //}
-    
-    
-}
+    // }
 
+}
