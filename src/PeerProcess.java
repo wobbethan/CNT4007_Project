@@ -5,10 +5,10 @@ import java.nio.channels.*;
 import java.util.*;
 import FileIO.*;
 
-public class PeerProcess extends Thread { // each peer is both a client and a server. Reads config file and creates peer object. 
-    private int ID;
+public class PeerProcess extends Thread { 
+    private int peerID;
 
-    //To be retrieved from Common config
+    // retrieved from Common config
     private String fileName;
     private int fileSize;
     private int pieceSize;
@@ -16,49 +16,49 @@ public class PeerProcess extends Thread { // each peer is both a client and a se
     private int OptimisticUnchokingInterval;
     private int numPreferredNeighbors;
 
-    //To be retrieved from PeerInfo config
+    // retrieved from PeerInfo config
     private int numPeers;
-    private static HashMap<Integer, String[]> network;
+    // key = peerID, value = peerInfo config string tokens
+    private static HashMap<Integer, String[]> neighboringPeers; 
     private String hostName;
     private int listeningPort;
     private Boolean fullFile;
 
-
-    public PeerProcess(int ID){ // peer object constructor
-        this.ID = ID;
+    public PeerProcess(int peerID) {
+        this.peerID = peerID;
     }
 
-    public static void main(String [] args){
+    public static void main(String[] args) {
+        PeerProcess peer = new PeerProcess(Integer.parseInt(args[0]));
 
-        PeerProcess peer = new PeerProcess(1005); //Define ID of process
+        String configType = "small";
 
-        String configType = "small"; //Determines which config to read
-
-        CommonParser commonParser = new CommonParser(configType); //Parse config files
+        // parse configs
+        CommonParser commonParser = new CommonParser(configType);
         PeerInfoParser peerParser = new PeerInfoParser(configType);
 
-        peer.fileName = commonParser.getFileName(); //Common config processing
+        // common config processing
+        commonParser.read();
+        peer.fileName = commonParser.getFileName(); 
         peer.fileSize = commonParser.getFileSize();
         peer.pieceSize = commonParser.getPieceSize();
         peer.OptimisticUnchokingInterval = commonParser.getOptimisticInterval();
         peer.unchokingInterval = commonParser.getUnchokingInterval();
         peer.numPreferredNeighbors = commonParser.getNumNeighbors();
 
-        peer.network = peerParser.readFile(); //PeerInfo processing
-        peer.numPeers = peer.network.size();
-        peer.hostName = network.get(peer.ID)[0];
-        peer.listeningPort = Integer.parseInt(network.get(peer.ID)[1]);
-        peer.fullFile = network.get(peer.ID)[2].equals("1") ? true : false;
+        // peerInfo processing
+        neighboringPeers = peerParser.readFile();
+        peer.numPeers = neighboringPeers.size();
+        peer.hostName = neighboringPeers.get(peer.peerID)[0];
+        peer.listeningPort = Integer.parseInt(neighboringPeers.get(peer.peerID)[1]);
+        peer.fullFile = neighboringPeers.get(peer.peerID)[2].equals("1") ? true : false;
 
-        //Print Testing
+        // Print Testing
         System.out.println(peer.numPeers);
         System.out.println(peer.hostName);
         System.out.println(peer.listeningPort);
         System.out.println(peer.fullFile);
 
-
-
     }
-
 
 }
