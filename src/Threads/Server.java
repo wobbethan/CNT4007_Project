@@ -29,17 +29,14 @@ public class Server extends Thread {
 				byte[] clientHandshake = receiveClientHandshake(socket);
                 System.out.println("server thread: " + new String (clientHandshake, "US-ASCII"));
 
-				// send client handshake
+				// send handshake to client
 				Handshake serverHandshake = new Handshake(peerID);
 				sendClientHandshake(socket, serverHandshake.getHandshakeAsByteArray());
-
-				// TODO: receive client handshake
-
-				// TODO: send handshake
 
 				// TODO: check client handshake valid
 
 				// TODO: check client id in handshake is contained within config file
+				// TODO: stop this peer from handshaking with itself
 
 				// TODO: send server bitfield to client
 

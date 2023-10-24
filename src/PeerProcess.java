@@ -78,7 +78,7 @@ public class PeerProcess extends Thread {
             serverThread.start();
 
             // create and run client thread
-            Client clientThread = new Client(peer.listeningPort, peer.peerID, peer.hostName, neighboringPeers);
+            Client clientThread = new Client(peer.peerID, neighboringPeers);
             clientThread.start();
         }
     }

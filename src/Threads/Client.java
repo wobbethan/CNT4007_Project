@@ -9,25 +9,27 @@ import java.util.*;
 import Messages.Handshake;
 
 public class Client extends Thread {
-    private int portNum;
     private int peerID;
-    private String hostIP;
     private HashMap<Integer, String[]> neighboringPeers;
 
-    public Client(int portNum, int peerID, String hostIP, HashMap<Integer, String[]> neighboringPeers) {
-        this.portNum = portNum;
+    public Client(int peerID, HashMap<Integer, String[]> neighboringPeers) {
         this.peerID = peerID;
-        this.hostIP = hostIP;
         this.neighboringPeers = neighboringPeers;
     }
 
+    // FIXME: maybe... when a client spawns, it'll only connect to the servers that are active.
+    // when a new peer joins the network, this client peer will not try to connect to the new one's
+    // server even though it probably should
     public void run() {
         // try to connect to every peer in the network
         for (Integer id : neighboringPeers.keySet()) {
             try {
+                // don't establish connection with itself
+                if (id == peerID) continue;
+
                 Socket socket = new Socket(neighboringPeers.get(id)[0], Integer.parseInt(neighboringPeers.get(id)[1]));    
 
-                // send server handshake
+                // send handshake to server
                 Handshake clientHandshake = new Handshake(peerID);
                 sendServerHandshake(socket, clientHandshake.getHandshakeAsByteArray());
 
@@ -35,6 +37,25 @@ public class Client extends Thread {
                 byte[] serverHandshake = receiveServerHandshake(socket);
                 System.out.println("client thread: " + new String (serverHandshake, "US-ASCII"));
 
+                // TODO: check handshake validity (correct format)
+
+                // TODO: check if peer id in handshake is contained within PeerInfo.cfg
+
+                // TODO: send bitfield
+
+                // TODO: receive bitfield
+
+                // TODO: add new client-server connection to peer list I think
+
+                // TODO: maybe find some way to track all peers that have a file
+
+				// TODO: spawn send message thread
+
+				// TODO: spawn request piece thread
+
+				// TODO: spawn receive message thread
+            } catch (ConnectException e) {
+                // don't log failed connection message
             } catch (IOException e) {
                 System.err.println(e);
             }
