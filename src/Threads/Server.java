@@ -11,10 +11,12 @@ import Messages.Handshake;
 public class Server extends Thread {
 	private int portNum;
 	private int peerID;
+	private HashMap<Integer, String[]> neighboringPeers;
 
-	public Server(int portNum, int peerID) {
+	public Server(int portNum, int peerID, HashMap<Integer, String[]> neighboringPeers) {
 		this.portNum = portNum;
 		this.peerID = peerID;
+		this.neighboringPeers = neighboringPeers;
 	}
 
 	@Override
@@ -27,15 +29,27 @@ public class Server extends Thread {
 
 				// receive client handshake
 				byte[] clientHandshake = receiveClientHandshake(socket);
-                System.out.println("server thread: " + new String (clientHandshake, "US-ASCII"));
 
 				// send handshake to client
 				Handshake serverHandshake = new Handshake(peerID);
 				sendClientHandshake(socket, serverHandshake.getHandshakeAsByteArray());
 
-				// TODO: check client handshake valid
+				String clientTranslated = new String(clientHandshake, "US-ASCII");
 
-				// TODO: check client id in handshake is contained within config file
+				System.out.println("server thread: " + new String(clientHandshake, "US-ASCII"));
+
+				// check handshake validity (correct format)
+				if (!clientTranslated.substring(0, 28).equals("P2PFILESHARINGPROJ0000000000")) {
+					System.err.println("Invalid handshake format recieved from server");
+					continue;
+				}
+
+				// check if peer id in handshake is contained within PeerInfo.cfg
+				if (!neighboringPeers.containsKey(Integer.parseInt(clientTranslated.substring(28, 32)))) {
+					System.err.println("Unknown peerID aborting connection");
+					continue;
+				}
+
 				// TODO: stop this peer from handshaking with itself
 
 				// TODO: send server bitfield to client
