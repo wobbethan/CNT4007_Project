@@ -64,28 +64,23 @@ public class PeerProcess extends Thread {
             for (int i = 0; i < bitfield.length; i++) {
                 bitfield[i] = true;
             }
-
+            
             // populate neighboringPeers with every piece
-
+            
             // create and run server thread only
-            // Server serverThread = new Server();
-            // serverThread.run();
+            Server serverThread = new Server(peer.listeningPort, peer.peerID);
+            serverThread.start();
         } else {
             // only spawn client thread if peer doesn't have full file
             neighboringPeers = new HashMap<>();
-
+            
             // create and run server thread
-            // Server serverThread = new Server();
-            // serverThread.run();
+            Server serverThread = new Server(peer.listeningPort, peer.peerID);
+            serverThread.start();
 
             // create and run client thread
-            // Server clientThread = new Server();
-            // clientThread.run();
-        }
-
-        byte[] test = convertBitfieldToByteArray(peer.fileSize, peer.pieceSize);
-        for (byte b : test) {
-            System.out.print(Integer.toBinaryString(b & 0xFF) + " ");
+            Client clientThread = new Client(peer.listeningPort, peer.peerID, peer.hostName, neighboringPeers);
+            clientThread.start();
         }
     }
 

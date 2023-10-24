@@ -1,64 +1,47 @@
 package Threads;
+
 import java.net.*;
 import java.io.*;
 import java.nio.*;
 import java.nio.channels.*;
 import java.util.*;
 
+import Messages.Handshake;
+
 public class Client extends Thread {
-    Socket requestSocket;
-    ObjectOutputStream out;
-    ObjectInputStream in;
-    String message;
-    String MESSAGE;
+    private int portNum;
+    private int peerID;
+    private String hostIP;
+    private HashMap<Integer, String[]> neighboringPeers;
 
-    public void run(){
-        try{
-            requestSocket = new Socket("localhost", 8000);
-            System.out.println("Connected to localhost in port" + requestSocket.getPort());
-            //initialize input and output stream
-            out = new ObjectOutputStream(requestSocket.getOutputStream());
-            out.flush(); // clears the output stream. 
-            in = new ObjectInputStream(requestSocket.getInputStream());
-
-            BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(System.in));
-
-        }
-
-        catch (ConnectException e){
-            System.err.println("Connection refused. You need to initiate a server first.");
-        }
-
-        catch(UnknownHostException unknownHost){
-            System.err.println("You are trying to connect to an unknown host!"); 
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        finally{ // Close connection
-
-        try{
-            in.close();
-            out.close();
-            requestSocket.close();
-        }
-        catch(IOException ioException){
-            ioException.printStackTrace();
-        }
+    public Client(int portNum, int peerID, String hostIP, HashMap<Integer, String[]> neighboringPeers) {
+        this.portNum = portNum;
+        this.peerID = peerID;
+        this.hostIP = hostIP;
+        this.neighboringPeers = neighboringPeers;
     }
-}
 
-    void sendMessage(String message){
-        try{
-            out.writeObject(message);
-            out.flush();
-        }
-        catch(IOException ioException){
-            ioException.printStackTrace();
+    public void run() {
+        
+            
+        // try to connect to every peer in the network
+        for (Integer id : neighboringPeers.keySet()) {
+            try {
+                // FIXME: neighboringPeers is blank for some reason, perhaps not getting
+                // assigne correctly in PeerProcess
+                System.out.println(neighboringPeers.get(id)[0] + " " +  Integer.parseInt(neighboringPeers.get(id)[1]));
+
+                Socket serverSocket = new Socket(neighboringPeers.get(id)[0], Integer.parseInt(neighboringPeers.get(id)[1]));    
+                
+                // send handshake
+                Handshake handshake = new Handshake(peerID);
+                ObjectOutputStream out = new ObjectOutputStream(serverSocket.getOutputStream());
+                out.writeObject(handshake);
+                out.flush();
+            } catch (IOException e) {
+                System.err.println(e);
+            }
         }
     }
 
-    public static void main(String args[]){
-        Client client = new Client();
-        client.run();
-    }
 }
