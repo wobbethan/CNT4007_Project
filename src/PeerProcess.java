@@ -7,7 +7,7 @@ import FileIO.*;
 import Threads.Client;
 import Threads.Server;
 
-public class PeerProcess extends Thread {
+public class peerProcess extends Thread {
     private int peerID;
 
     // retrieved from Common config
@@ -26,12 +26,12 @@ public class PeerProcess extends Thread {
     private boolean hasFullFile;
     private static boolean[] bitfield;
 
-    public PeerProcess(int peerID) {
+    public peerProcess(int peerID) {
         this.peerID = peerID;
     }
 
     public static void main(String[] args) {
-        PeerProcess peer = new PeerProcess(Integer.parseInt(args[0]));
+        peerProcess peer = new peerProcess(Integer.parseInt(args[0]));
         String configType = "small";
         String configEnv = "-local-testing";
 
@@ -64,17 +64,17 @@ public class PeerProcess extends Thread {
             for (int i = 0; i < bitfield.length; i++) {
                 bitfield[i] = true;
             }
-            
+
             // TODO: populate piece hashmap to have all pieces
-            
+
             // create and run server thread only
-            Server serverThread = new Server(peer.listeningPort, peer.peerID);
+            Server serverThread = new Server(peer.listeningPort, peer.peerID, neighboringPeers);
             serverThread.start();
         } else {
-            // TODO: create new empty piece hashmap 
-            
+            // TODO: create new empty piece hashmap
+
             // create and run server thread
-            Server serverThread = new Server(peer.listeningPort, peer.peerID);
+            Server serverThread = new Server(peer.listeningPort, peer.peerID, neighboringPeers);
             serverThread.start();
 
             // create and run client thread

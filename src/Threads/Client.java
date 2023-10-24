@@ -9,60 +9,74 @@ import java.util.*;
 import Messages.Handshake;
 
 public class Client extends Thread {
-    private int peerID;
-    private HashMap<Integer, String[]> neighboringPeers;
+	private int peerID;
+	private HashMap<Integer, String[]> neighboringPeers;
 
-    public Client(int peerID, HashMap<Integer, String[]> neighboringPeers) {
-        this.peerID = peerID;
-        this.neighboringPeers = neighboringPeers;
-    }
+	public Client(int peerID, HashMap<Integer, String[]> neighboringPeers) {
+		this.peerID = peerID;
+		this.neighboringPeers = neighboringPeers;
+	}
 
-    // FIXME: maybe... when a client spawns, it'll only connect to the servers that are active.
-    // when a new peer joins the network, this client peer will not try to connect to the new one's
-    // server even though it probably should
-    public void run() {
-        // try to connect to every peer in the network
-        for (Integer id : neighboringPeers.keySet()) {
-            try {
-                // don't establish connection with itself
-                if (id == peerID) continue;
+	// FIXME: maybe... when a client spawns, it'll only connect to the servers that
+	// are active.
+	// when a new peer joins the network, this client peer will not try to connect
+	// to the new one's
+	// server even though it probably should
+	public void run() {
+		// try to connect to every peer in the network
+		for (Integer id : neighboringPeers.keySet()) {
+			try {
+				// don't establish connection with itself
+				if (id == peerID)
+					continue;
 
-                Socket socket = new Socket(neighboringPeers.get(id)[0], Integer.parseInt(neighboringPeers.get(id)[1]));    
+				Socket socket = new Socket(neighboringPeers.get(id)[0], Integer.parseInt(neighboringPeers.get(id)[1]));
 
-                // send handshake to server
-                Handshake clientHandshake = new Handshake(peerID);
-                sendServerHandshake(socket, clientHandshake.getHandshakeAsByteArray());
+				// send handshake to server
+				Handshake clientHandshake = new Handshake(peerID);
+				sendServerHandshake(socket, clientHandshake.getHandshakeAsByteArray());
 
-                // receive server handshake
-                byte[] serverHandshake = receiveServerHandshake(socket);
-                System.out.println("client thread: " + new String (serverHandshake, "US-ASCII"));
+				// receive server handshake
+				byte[] serverHandshake = receiveServerHandshake(socket);
 
-                // TODO: check handshake validity (correct format)
+				String serverTranslated = new String(serverHandshake, "US-ASCII");
 
-                // TODO: check if peer id in handshake is contained within PeerInfo.cfg
+				System.out.println("client thread: " + new String(serverHandshake, "US-ASCII"));
 
-                // TODO: send bitfield
+				// check handshake validity (correct format)
+				if (!serverTranslated.substring(0, 28).equals("P2PFILESHARINGPROJ0000000000")) {
+					System.err.println("Invalid handshake format recieved from server");
+					continue;
+				}
 
-                // TODO: receive bitfield
+				// check if peer id in handshake is contained within PeerInfo.cfg
+				if (!neighboringPeers.containsKey(Integer.parseInt(serverTranslated.substring(28, 32)))) {
+					System.err.println("Unknown peerID aborting connection");
+					continue;
+				}
 
-                // TODO: add new client-server connection to peer list I think
+				// TODO: send bitfield
 
-                // TODO: maybe find some way to track all peers that have a file
+				// TODO: receive bitfield
+
+				// TODO: add new client-server connection to peer list I think
+
+				// TODO: maybe find some way to track all peers that have a file
 
 				// TODO: spawn send message thread
 
 				// TODO: spawn request piece thread
 
 				// TODO: spawn receive message thread
-            } catch (ConnectException e) {
-                // don't log failed connection message
-            } catch (IOException e) {
-                System.err.println(e);
-            }
-        }
-    }
+			} catch (ConnectException e) {
+				// don't log failed connection message
+			} catch (IOException e) {
+				System.err.println(e);
+			}
+		}
+	}
 
-    /**
+	/**
 	 * retrieves the handshake message sent from server peer to client peer socket
 	 * 
 	 * @param socket communication socket between client peer and server peer
