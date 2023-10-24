@@ -1,99 +1,133 @@
 package Threads;
+
 import java.net.*;
 import java.io.*;
 import java.nio.*;
 import java.nio.channels.*;
 import java.util.*;
 
-public class Server extends Thread {
-    
-	private static final int sPort = 8000;   //The server will be listening on this port number
+import Messages.Handshake;
 
-	public static void main(String[] args) throws Exception {
-		System.out.println("The server is running."); 
-        	ServerSocket listener = new ServerSocket(sPort);
-		int clientNum = 1;
-        	try {
-            		while(true) {
-                		new Handler(listener.accept(),clientNum).start();
-				System.out.println("Client "  + clientNum + " is connected!");
-				clientNum++;
-            			}
-        	} finally {
-            		listener.close();
-        	} 
- 
-    	}
+public class Server extends Thread {
+	private int portNum;
+	private int peerID;
+
+	public Server(int portNum, int peerID) {
+		this.portNum = portNum;
+		this.peerID = peerID;
+	}
+
+	@Override
+	public void run() {
+		try {
+			ServerSocket listenerSocket = new ServerSocket(portNum);
+
+			while (true) {
+				Socket socket = listenerSocket.accept();
+
+				// receive client handshake
+				byte[] clientHandshake = receiveClientHandshake(socket);
+                System.out.println("server thread: " + new String (clientHandshake, "US-ASCII"));
+
+				// send handshake to client
+				Handshake serverHandshake = new Handshake(peerID);
+				sendClientHandshake(socket, serverHandshake.getHandshakeAsByteArray());
+
+				// TODO: check client handshake valid
+
+				// TODO: check client id in handshake is contained within config file
+				// TODO: stop this peer from handshaking with itself
+
+				// TODO: send server bitfield to client
+
+				// TODO: receive bitfield from client
+
+				// TODO: log tcp connection established
+
+				// TODO: maybe find some way to track all peers that have a file
+
+				// TODO: spawn send message thread
+
+				// TODO: spawn request piece thread
+
+				// TODO: spawn receive message thread
+
+			}
+		} catch (IOException e) {
+			System.err.println(e);
+		}
+
+	}
 
 	/**
-     	* A handler thread class.  Handlers are spawned from the listening
-     	* loop and are responsible for dealing with a single client's requests.
-     	*/
-    	private static class Handler extends Thread {
-        	private String message;    //message received from the client
-		private String MESSAGE;    //uppercase message send to the client
-		private Socket connection;
-        	private ObjectInputStream in;	//stream read from the socket
-        	private ObjectOutputStream out;    //stream write to the socket
-		private int no;		//The index number of the client
-
-        	public Handler(Socket connection, int no) {
-            		this.connection = connection;
-	    		this.no = no;
-        	}
-
-        public void run() {
- 		try{
-			//initialize Input and Output streams
-			out = new ObjectOutputStream(connection.getOutputStream());
-			out.flush();
-			in = new ObjectInputStream(connection.getInputStream());
-			try{
-				while(true)
-				{
-					//receive the message sent from the client
-					message = (String)in.readObject();
-					//show the message to the user
-					System.out.println("Receive message: " + message + " from client " + no);
-					//Capitalize all letters in the message
-					MESSAGE = message.toUpperCase();
-					//send MESSAGE back to the client
-					sendMessage(MESSAGE);
-				}
-			}
-			catch(ClassNotFoundException classnot){
-					System.err.println("Data received in unknown format");
-				}
+	 * retrieves the handshake message sent from client peer to server peer socket
+	 * 
+	 * @param socket communication socket between client peer and server peer
+	 * @return handshake message as a byte[]
+	 */
+	private byte[] receiveClientHandshake(Socket socket) {
+		byte[] handshake = null;
+		try {
+			ObjectInputStream inStream = new ObjectInputStream(socket.getInputStream());
+			handshake = (byte[]) inStream.readObject();
+		} catch (IOException e) {
+			System.err.println(e);
+		} catch (ClassNotFoundException e) {
+			System.err.println(e);
 		}
-		catch(IOException ioException){
-			System.out.println("Disconnect with Client " + no);
-		}
-		finally{
-			//Close connections
-			try{
-				in.close();
-				out.close();
-				connection.close();
-			}
-			catch(IOException ioException){
-				System.out.println("Disconnect with Client " + no);
-			}
+
+		return handshake;
+	}
+
+	/**
+	 * sends the client peer a handshake message from the server peer over the
+	 * socket
+	 * 
+	 * @param socket    communication socket between client peer and server peer
+	 * @param handshake handshake message as a byte[]
+	 */
+	private void sendClientHandshake(Socket socket, byte[] handshake) {
+		try {
+			ObjectOutputStream outStream = new ObjectOutputStream(socket.getOutputStream());
+			outStream.writeObject(handshake);
+		} catch (IOException e) {
+			System.err.println(e);
 		}
 	}
 
-	//send a message to the output stream
-	public void sendMessage(String msg)
-	{
-		try{
-			out.writeObject(msg);
-			out.flush();
-			System.out.println("Send message: " + msg + " to Client " + no);
+	/**
+	 * retrieves the bitfield message sent from client peer to server peer socket
+	 * 
+	 * @param socket communication socket between client peer and server peer
+	 * @return bitfield message as a byte[]
+	 */
+	private byte[] receiveClientBitfield(Socket socket) {
+		byte[] bitfield = null;
+		try {
+			ObjectInputStream inStream = new ObjectInputStream(socket.getInputStream());
+			bitfield = (byte[]) inStream.readObject();
+		} catch (IOException e) {
+			System.err.println(e);
+		} catch (ClassNotFoundException e) {
+			System.err.println(e);
 		}
-		catch(IOException ioException){
-			ioException.printStackTrace();
-		}
+
+		return bitfield;
 	}
 
-    }
+	/**
+	 * sends the client peer a bitfield message from the server peer over the socket
+	 * 
+	 * @param socket   communication socket between client peer and server peer
+	 * @param bitfield the server's bitfield as a byte[]
+	 */
+	private void sendClientBitfield(Socket socket, byte[] bitfield) {
+		try {
+			ObjectOutputStream outStream = new ObjectOutputStream(socket.getOutputStream());
+			outStream.writeObject(bitfield);
+		} catch (IOException e) {
+			System.err.println(e);
+		}
+	}
 
 }

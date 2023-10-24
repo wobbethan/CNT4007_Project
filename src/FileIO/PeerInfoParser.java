@@ -12,14 +12,16 @@ import java.util.HashMap;
 public class PeerInfoParser {
 
     private String configType;
+    private String configEnv;
 
-    public PeerInfoParser(String type) {
+    public PeerInfoParser(String type, String env) {
         this.configType = type;
+        this.configEnv = env;
     }
 
     public HashMap<Integer, String[]> readFile() {
         String filePathFromRoot = "/project_config_file_" + configType + "/project_config_file_" + configType
-                + "/PeerInfo.cfg";
+                + "/PeerInfo" + configEnv + ".cfg";
 
         HashMap<Integer, String[]> parsedFile = new HashMap<>();
 

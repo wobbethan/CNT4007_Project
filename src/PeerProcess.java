@@ -32,12 +32,12 @@ public class PeerProcess extends Thread {
 
     public static void main(String[] args) {
         PeerProcess peer = new PeerProcess(Integer.parseInt(args[0]));
-
         String configType = "small";
+        String configEnv = "-local-testing";
 
         // parse configs
         CommonParser commonParser = new CommonParser(configType);
-        PeerInfoParser peerParser = new PeerInfoParser(configType);
+        PeerInfoParser peerParser = new PeerInfoParser(configType, configEnv);
 
         // common config processing
         commonParser.read();
@@ -64,28 +64,22 @@ public class PeerProcess extends Thread {
             for (int i = 0; i < bitfield.length; i++) {
                 bitfield[i] = true;
             }
-
-            // populate neighboringPeers with every piece
-
+            
+            // TODO: populate piece hashmap to have all pieces
+            
             // create and run server thread only
-            // Server serverThread = new Server();
-            // serverThread.run();
+            Server serverThread = new Server(peer.listeningPort, peer.peerID);
+            serverThread.start();
         } else {
-            // only spawn client thread if peer doesn't have full file
-            neighboringPeers = new HashMap<>();
-
+            // TODO: create new empty piece hashmap 
+            
             // create and run server thread
-            // Server serverThread = new Server();
-            // serverThread.run();
+            Server serverThread = new Server(peer.listeningPort, peer.peerID);
+            serverThread.start();
 
             // create and run client thread
-            // Server clientThread = new Server();
-            // clientThread.run();
-        }
-
-        byte[] test = convertBitfieldToByteArray(peer.fileSize, peer.pieceSize);
-        for (byte b : test) {
-            System.out.print(Integer.toBinaryString(b & 0xFF) + " ");
+            Client clientThread = new Client(peer.peerID, neighboringPeers);
+            clientThread.start();
         }
     }
 
@@ -99,7 +93,6 @@ public class PeerProcess extends Thread {
     }
 
     /**
-     * FIXME: this does not work LMAO
      * converts the PeerProcess's boolean array bitfield to a byte array
      * 
      * @param fileSize  size of file in bytes, grabbed from config file
