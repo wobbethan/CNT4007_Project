@@ -12,8 +12,8 @@ public class peerProcess extends Thread {
 
     // retrieved from Common config
     private String fileName;
-    private int fileSize;
-    private int pieceSize;
+    private static int fileSize;
+    private static int pieceSize;
     private int unchokingInterval;
     private int OptimisticUnchokingInterval;
     private int numPreferredNeighbors;
@@ -68,17 +68,20 @@ public class peerProcess extends Thread {
             // TODO: populate piece hashmap to have all pieces
 
             // create and run server thread only
-            Server serverThread = new Server(peer.listeningPort, peer.peerID, neighboringPeers);
+            Server serverThread = new Server(peer.listeningPort, peer.peerID, neighboringPeers,
+                    convertBitfieldToByteArray(fileSize, pieceSize));
             serverThread.start();
         } else {
             // TODO: create new empty piece hashmap
 
             // create and run server thread
-            Server serverThread = new Server(peer.listeningPort, peer.peerID, neighboringPeers);
+            Server serverThread = new Server(peer.listeningPort, peer.peerID, neighboringPeers,
+                    convertBitfieldToByteArray(fileSize, pieceSize));
             serverThread.start();
 
             // create and run client thread
-            Client clientThread = new Client(peer.peerID, neighboringPeers);
+            Client clientThread = new Client(peer.peerID, neighboringPeers,
+                    convertBitfieldToByteArray(fileSize, pieceSize));
             clientThread.start();
         }
     }

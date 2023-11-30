@@ -12,11 +12,13 @@ public class Server extends Thread {
 	private int portNum;
 	private int peerId;
 	private HashMap<Integer, String[]> neighboringPeers;
+	private byte[] bitfield; // TODO: maybe convert this back to be a boolean array
 
-	public Server(int portNum, int peerId, HashMap<Integer, String[]> neighboringPeers) {
+	public Server(int portNum, int peerId, HashMap<Integer, String[]> neighboringPeers, byte[] bitfield) {
 		this.portNum = portNum;
 		this.peerId = peerId;
 		this.neighboringPeers = neighboringPeers;
+		this.bitfield = bitfield;
 	}
 
 	@Override
@@ -56,9 +58,12 @@ public class Server extends Thread {
 					continue;
 				}
 
-				// TODO: send server bitfield to client
+				// send server's bitfield to client
+				sendClientBitfield(socket, bitfield);
 
-				// TODO: receive bitfield from client
+				// receive bitfield from client
+				byte[] clientBitfield = receiveClientBitfield(socket);
+				printByteArrayAsBinary(clientBitfield);
 
 				// TODO: log tcp connection established
 
@@ -146,6 +151,23 @@ public class Server extends Thread {
 		} catch (IOException e) {
 			System.err.println(e);
 		}
+	}
+
+	/**
+	 * prints a byte array as nicely formatted binary
+	 * 
+	 * @param array byte array to print as binary
+	 */
+	private void printByteArrayAsBinary(byte[] array) {
+		for (byte b : array) {
+			for (int i = 7; i >= 0; i--) {
+				System.out.print((b >> i) & 1);
+			}
+
+			System.out.print(" ");
+		}
+
+		System.out.println();
 	}
 
 }
