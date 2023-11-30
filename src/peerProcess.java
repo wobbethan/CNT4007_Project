@@ -80,7 +80,7 @@ public class peerProcess extends Thread {
             // create and run client thread
             Client clientThread = new Client(peer.peerID, neighboringPeers);
             clientThread.start();
-        }
+        } 
     }
 
     /**
@@ -90,6 +90,17 @@ public class peerProcess extends Thread {
      */
     public static void addPieceToBitfield(int pieceIndex) {
         bitfield[pieceIndex] = true;
+    }
+
+    public static void checkFullFile() {
+        if(!hasFullFile){
+            for(int i = 0; i<bitfield.size();i++){
+                if(!bitfield[i]){
+                    return;
+                }
+            }
+            hasFullFile = true;
+        }
     }
 
     /**
