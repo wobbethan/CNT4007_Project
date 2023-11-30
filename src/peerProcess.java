@@ -88,19 +88,27 @@ public class peerProcess extends Thread {
      * 
      * @param pieceIndex the index of the piece in the bitfield
      */
+
+    
     public static void addPieceToBitfield(int pieceIndex) {
         bitfield[pieceIndex] = true;
     }
 
-    public static void checkFullFile() {
+    /**
+     * Checks bitfield for all 1s (full file) if not exit and return index of first missing piece
+     * 
+     */
+
+    public static int checkFullFile() {
         if(!hasFullFile){
-            for(int i = 0; i<bitfield.size();i++){
+            for(int i = 0; i<bitfield.length;i++){
                 if(!bitfield[i]){
-                    return;
+                    return i;
                 }
             }
             hasFullFile = true;
         }
+        return -1;
     }
 
     /**
@@ -128,4 +136,7 @@ public class peerProcess extends Thread {
 
         return byteArray;
     }
+
+
+
 }
