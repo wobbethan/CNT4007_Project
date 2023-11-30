@@ -10,12 +10,12 @@ import Messages.Handshake;
 
 public class Server extends Thread {
 	private int portNum;
-	private int peerID;
+	private int peerId;
 	private HashMap<Integer, String[]> neighboringPeers;
 
-	public Server(int portNum, int peerID, HashMap<Integer, String[]> neighboringPeers) {
+	public Server(int portNum, int peerId, HashMap<Integer, String[]> neighboringPeers) {
 		this.portNum = portNum;
-		this.peerID = peerID;
+		this.peerId = peerId;
 		this.neighboringPeers = neighboringPeers;
 	}
 
@@ -31,7 +31,7 @@ public class Server extends Thread {
 				byte[] clientHandshake = receiveClientHandshake(socket);
 
 				// send handshake to client
-				Handshake serverHandshake = new Handshake(peerID);
+				Handshake serverHandshake = new Handshake(peerId);
 				sendClientHandshake(socket, serverHandshake.getHandshakeAsByteArray());
 
 				String clientTranslated = new String(clientHandshake, "US-ASCII");
@@ -45,12 +45,16 @@ public class Server extends Thread {
 				}
 
 				// check if peer id in handshake is contained within PeerInfo.cfg
-				if (!neighboringPeers.containsKey(Integer.parseInt(clientTranslated.substring(28, 32)))) {
-					System.err.println("Unknown peerID aborting connection");
+				int clientId = Integer.parseInt(clientTranslated.substring(28, 32));
+				if (!neighboringPeers.containsKey(clientId)) {
+					System.err.println("Unknown peerId aborting connection");
 					continue;
 				}
 
-				// TODO: stop this peer from handshaking with itself
+				// stop this peer from handshaking with itself (peer client connects to same peer server thread)
+				if (peerId == clientId) {
+					continue;
+				}
 
 				// TODO: send server bitfield to client
 
