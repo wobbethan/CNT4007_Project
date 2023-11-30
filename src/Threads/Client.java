@@ -11,10 +11,12 @@ import Messages.Handshake;
 public class Client extends Thread {
 	private int peerID;
 	private HashMap<Integer, String[]> neighboringPeers;
+	private byte[] bitfield; // TODO: maybe convert this back to be a boolean array
 
-	public Client(int peerID, HashMap<Integer, String[]> neighboringPeers) {
+	public Client(int peerID, HashMap<Integer, String[]> neighboringPeers, byte[] bitfield) {
 		this.peerID = peerID;
 		this.neighboringPeers = neighboringPeers;
+		this.bitfield = bitfield;
 	}
 
 	// FIXME: maybe... when a client spawns, it'll only connect to the servers that
@@ -55,9 +57,12 @@ public class Client extends Thread {
 					continue;
 				}
 
-				// TODO: send bitfield
+				// send client's bitfield to server
+				sendServerBitfield(socket, bitfield);
 
-				// TODO: receive bitfield
+				// receive server's bitfield
+				byte[] serverBitfield = receiveServerBitfield(socket);
+				printByteArrayAsBinary(serverBitfield);
 
 				// TODO: add new client-server connection to peer list I think
 
@@ -145,6 +150,23 @@ public class Client extends Thread {
 		} catch (IOException e) {
 			System.err.println(e);
 		}
+	}
+
+	/**
+	 * prints a byte array as nicely formatted binary
+	 * 
+	 * @param array byte array to print as binary
+	 */
+	private void printByteArrayAsBinary(byte[] array) {
+		for (byte b : array) {
+			for (int i = 7; i >= 0; i--) {
+				System.out.print((b >> i) & 1);
+			}
+
+			System.out.print(" ");
+		}
+
+		System.out.println();
 	}
 
 }

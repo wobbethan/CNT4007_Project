@@ -12,8 +12,8 @@ public class peerProcess extends Thread {
 
     // retrieved from Common config
     private String fileName;
-    private int fileSize;
-    private int pieceSize;
+    private static int fileSize;
+    private static int pieceSize;
     private int unchokingInterval;
     private int OptimisticUnchokingInterval;
     private int numPreferredNeighbors;
@@ -68,19 +68,22 @@ public class peerProcess extends Thread {
             // TODO: populate piece hashmap to have all pieces
 
             // create and run server thread only
-            Server serverThread = new Server(peer.listeningPort, peer.peerID, neighboringPeers);
+            Server serverThread = new Server(peer.listeningPort, peer.peerID, neighboringPeers,
+                    convertBitfieldToByteArray(fileSize, pieceSize));
             serverThread.start();
         } else {
             // TODO: create new empty piece hashmap
 
             // create and run server thread
-            Server serverThread = new Server(peer.listeningPort, peer.peerID, neighboringPeers);
+            Server serverThread = new Server(peer.listeningPort, peer.peerID, neighboringPeers,
+                    convertBitfieldToByteArray(fileSize, pieceSize));
             serverThread.start();
 
             // create and run client thread
-            Client clientThread = new Client(peer.peerID, neighboringPeers);
+            Client clientThread = new Client(peer.peerID, neighboringPeers,
+                    convertBitfieldToByteArray(fileSize, pieceSize));
             clientThread.start();
-        } 
+        }
     }
 
     /**
@@ -88,19 +91,33 @@ public class peerProcess extends Thread {
      * 
      * @param pieceIndex the index of the piece in the bitfield
      */
+
     public static void addPieceToBitfield(int pieceIndex) {
         bitfield[pieceIndex] = true;
     }
 
-    public static void checkFullFile() {
-        if(!hasFullFile){
-            for(int i = 0; i<bitfield.size();i++){
-                if(!bitfield[i]){
-                    return;
-                }
-            }
-            hasFullFile = true;
+    /**
+     * checks bitfield for all 1s (full file) if not exit and return index of first
+     * missing piece
+     * 
+     * @return index of first missing piece, -1 if has full file
+     */
+
+    public int checkHasFullFile() {
+        if (hasFullFile) {
+            return -1;
         }
+
+        // return index of first missing piece
+        for (int i = 0; i < bitfield.length; i++) {
+            if (!bitfield[i]) {
+                return i;
+            }
+        }
+
+        // peer process proven to have full file
+        hasFullFile = true;
+        return -1;
     }
 
     /**
@@ -128,4 +145,5 @@ public class peerProcess extends Thread {
 
         return byteArray;
     }
+
 }
