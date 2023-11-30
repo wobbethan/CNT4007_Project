@@ -80,7 +80,7 @@ public class peerProcess extends Thread {
             // create and run client thread
             Client clientThread = new Client(peer.peerID, neighboringPeers);
             clientThread.start();
-        } 
+        }
     }
 
     /**
@@ -89,25 +89,31 @@ public class peerProcess extends Thread {
      * @param pieceIndex the index of the piece in the bitfield
      */
 
-    
     public static void addPieceToBitfield(int pieceIndex) {
         bitfield[pieceIndex] = true;
     }
 
     /**
-     * Checks bitfield for all 1s (full file) if not exit and return index of first missing piece
+     * checks bitfield for all 1s (full file) if not exit and return index of first
+     * missing piece
      * 
+     * @return index of first missing piece, -1 if has full file
      */
 
-    public static int checkFullFile() {
-        if(!hasFullFile){
-            for(int i = 0; i<bitfield.length;i++){
-                if(!bitfield[i]){
-                    return i;
-                }
-            }
-            hasFullFile = true;
+    public int checkHasFullFile() {
+        if (hasFullFile) {
+            return -1;
         }
+
+        // return index of first missing piece
+        for (int i = 0; i < bitfield.length; i++) {
+            if (!bitfield[i]) {
+                return i;
+            }
+        }
+
+        // peer process proven to have full file
+        hasFullFile = true;
         return -1;
     }
 
@@ -136,7 +142,5 @@ public class peerProcess extends Thread {
 
         return byteArray;
     }
-
-
 
 }
