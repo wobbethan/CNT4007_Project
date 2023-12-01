@@ -44,8 +44,6 @@ public class Client extends Thread {
 
 				String serverTranslated = new String(serverHandshake, "US-ASCII");
 
-				System.out.println("client thread: " + new String(serverHandshake, "US-ASCII"));
-
 				// check handshake validity (correct format)
 				if (!serverTranslated.substring(0, 28).equals("P2PFILESHARINGPROJ0000000000")) {
 					System.err.println("Invalid handshake format recieved from server");
@@ -66,7 +64,6 @@ public class Client extends Thread {
 
 				// receive server's bitfield
 				byte[] serverBitfield = receiveServerBitfield(socket);
-				printByteArrayAsBinary(serverBitfield);
 
 				// TODO: add new client-server connection to peer list I think
 

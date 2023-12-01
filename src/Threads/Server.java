@@ -41,8 +41,6 @@ public class Server extends Thread {
 
 				String clientTranslated = new String(clientHandshake, "US-ASCII");
 
-				System.out.println("server thread: " + new String(clientHandshake, "US-ASCII"));
-
 				// check handshake validity (correct format)
 				if (!clientTranslated.substring(0, 28).equals("P2PFILESHARINGPROJ0000000000")) {
 					System.err.println("Invalid handshake format recieved from server");
@@ -68,7 +66,6 @@ public class Server extends Thread {
 
 				// receive bitfield from client
 				byte[] clientBitfield = receiveClientBitfield(socket);
-				printByteArrayAsBinary(clientBitfield);
 
 				// TODO: log tcp connection established
 
