@@ -168,7 +168,7 @@ public class peerProcess extends Thread {
         message[3] = (byte) size;
 
         //write message type
-        message[5] = (byte)type;
+        message[4] = (byte)type;
 
         return message;
 
@@ -195,12 +195,12 @@ public class peerProcess extends Thread {
         message[3] = (byte) size;
 
         //write message type
-        message[5] = (byte)type;
+        message[4] = (byte)type;
 
-        message[6] = (byte) (index >> 24);
-        message[7] = (byte) (index >> 16);
-        message[8] = (byte) (index >> 8);
-        message[9] = (byte) index;
+        message[5] = (byte) (index >> 24);
+        message[6] = (byte) (index >> 16);
+        message[7] = (byte) (index >> 8);
+        message[8] = (byte) index;
 
 
         return message;
@@ -229,7 +229,7 @@ public class peerProcess extends Thread {
         message[3] = (byte) size;
 
         //write message type
-        message[5] = (byte)type;
+        message[4] = (byte)type;
 
         for(int i = 0; i < payload.length; i++){
             message[i+5] = payload[i];
