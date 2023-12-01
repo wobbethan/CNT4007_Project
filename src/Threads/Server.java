@@ -5,6 +5,7 @@ import java.io.*;
 import java.nio.*;
 import java.nio.channels.*;
 import java.util.*;
+import FileIO.Logger;
 
 import Messages.Handshake;
 
@@ -13,12 +14,14 @@ public class Server extends Thread {
 	private int peerId;
 	private HashMap<Integer, String[]> neighboringPeers;
 	private byte[] bitfield; // TODO: maybe convert this back to be a boolean array
+	private Logger logger;
 
-	public Server(int portNum, int peerId, HashMap<Integer, String[]> neighboringPeers, byte[] bitfield) {
+	public Server(int portNum, int peerId, HashMap<Integer, String[]> neighboringPeers, byte[] bitfield, Logger logger) {
 		this.portNum = portNum;
 		this.peerId = peerId;
 		this.neighboringPeers = neighboringPeers;
 		this.bitfield = bitfield;
+		this.logger = logger;
 	}
 
 	@Override
@@ -57,6 +60,8 @@ public class Server extends Thread {
 				if (peerId == clientId) {
 					continue;
 				}
+
+				logger.logTCPConnection(clientId);
 
 				// send server's bitfield to client
 				sendClientBitfield(socket, bitfield);

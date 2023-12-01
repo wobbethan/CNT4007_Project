@@ -9,6 +9,7 @@ import Threads.Server;
 
 public class peerProcess extends Thread {
     private int peerID;
+    private Logger logger;
 
     // retrieved from Common config
     private String fileName;
@@ -55,7 +56,8 @@ public class peerProcess extends Thread {
         peer.listeningPort = Integer.parseInt(neighboringPeers.get(peer.peerID)[1]);
         peer.hasFullFile = neighboringPeers.get(peer.peerID)[2].equals("1") ? true : false;
 
-        // TODO: spin up logger
+        // spin up logger
+        peer.logger = new Logger(peer.peerID);
 
         bitfield = new boolean[(int) Math.ceil(peer.fileSize / peer.pieceSize)];
 
@@ -69,14 +71,14 @@ public class peerProcess extends Thread {
 
             // create and run server thread only
             Server serverThread = new Server(peer.listeningPort, peer.peerID, neighboringPeers,
-                    convertBitfieldToByteArray(fileSize, pieceSize));
+                    convertBitfieldToByteArray(fileSize, pieceSize), peer.logger);
             serverThread.start();
         } else {
             // TODO: create new empty piece hashmap
 
             // create and run server thread
             Server serverThread = new Server(peer.listeningPort, peer.peerID, neighboringPeers,
-                    convertBitfieldToByteArray(fileSize, pieceSize));
+                    convertBitfieldToByteArray(fileSize, pieceSize), peer.logger);
             serverThread.start();
 
             // create and run client thread
