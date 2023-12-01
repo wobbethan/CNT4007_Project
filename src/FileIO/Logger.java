@@ -5,13 +5,10 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.io.BufferedWriter;
-import java.io.FileOutputStream;
-import java.io.PrintWriter;
 
 public class Logger {
     private int peerId;
     private String fileName;
-    private PrintWriter writer;
 
     public Logger(int peerId) {
         this.peerId = peerId;
@@ -19,12 +16,8 @@ public class Logger {
 
         try {
             // clear previous logs
-            writer = new PrintWriter(fileName);
+            BufferedWriter writer = new BufferedWriter(new FileWriter(fileName, false));
             writer.close();
-            
-            // open new writer
-            writer = new PrintWriter(fileName);
-            writer.println("test");
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -38,11 +31,14 @@ public class Logger {
     }
 
     public void logTCPConnection(int connectingPeerId) {
-        // try {
-        //     writer.println("[" + fetchCurrentTime() + "]:Peer" + peerId + " makes a connection to Peer " + connectingPeerId);
-        // } catch(IOException e) { 
-        //     e.printStackTrace();
-        // }
+        try {
+            BufferedWriter writer = new BufferedWriter(new FileWriter(fileName, true));
+            writer.write("[" + fetchCurrentTime() + "]: Peer " + peerId + " makes a connection to Peer "
+                    + connectingPeerId + "\n");
+            writer.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
 }

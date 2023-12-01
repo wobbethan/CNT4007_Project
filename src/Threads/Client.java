@@ -5,6 +5,7 @@ import java.io.*;
 import java.nio.*;
 import java.nio.channels.*;
 import java.util.*;
+import FileIO.Logger;
 
 import Messages.Handshake;
 
@@ -12,18 +13,18 @@ public class Client extends Thread {
 	private int peerID;
 	private HashMap<Integer, String[]> neighboringPeers;
 	private byte[] bitfield; // TODO: maybe convert this back to be a boolean array
+	private Logger logger;
 
-	public Client(int peerID, HashMap<Integer, String[]> neighboringPeers, byte[] bitfield) {
+	public Client(int peerID, HashMap<Integer, String[]> neighboringPeers, byte[] bitfield, Logger logger) {
 		this.peerID = peerID;
 		this.neighboringPeers = neighboringPeers;
 		this.bitfield = bitfield;
+		this.logger = logger;
 	}
 
-	// FIXME: maybe... when a client spawns, it'll only connect to the servers that
-	// are active.
-	// when a new peer joins the network, this client peer will not try to connect
-	// to the new one's
-	// server even though it probably should
+	// FIXME: when a client spawns, it'll only connect to the servers that
+	// are active. when a new peer joins the network, this client peer will not try
+	// to connect to the new ones
 	public void run() {
 		// try to connect to every peer in the network
 		for (Integer id : neighboringPeers.keySet()) {
@@ -52,10 +53,13 @@ public class Client extends Thread {
 				}
 
 				// check if peer id in handshake is contained within PeerInfo.cfg
-				if (!neighboringPeers.containsKey(Integer.parseInt(serverTranslated.substring(28, 32)))) {
+				int serverId = Integer.parseInt(serverTranslated.substring(28, 32));
+				if (!neighboringPeers.containsKey(serverId)) {
 					System.err.println("Unknown peerID aborting connection");
 					continue;
 				}
+
+				logger.logTCPConnection(serverId);
 
 				// send client's bitfield to server
 				sendServerBitfield(socket, bitfield);
