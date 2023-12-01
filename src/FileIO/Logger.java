@@ -47,6 +47,8 @@ public class Logger {
         logMessage(message);
     }
 
+    // NOTE: only the server thread should call this since it's the one determining
+    // preferred neighbors
     public void logChangePreferredNeighbors(int[] preferredNeighbors) {
         if (preferredNeighbors == null || preferredNeighbors.length == 0) {
             System.err.println("ERROR: preferred neighbors list is invalid");
@@ -67,6 +69,67 @@ public class Logger {
     public void logChangeOptimisticallyUnchokedNeighbor(int neighbor) {
         String message = "[" + fetchCurrentTime() + "]: Peer " + peerId + " has the optimistically unchoked neighbor "
                 + neighbor + ".\n";
+
+        logMessage(message);
+    }
+
+    // NOTE: only the server thread should call this since it's the one doing the
+    // unchoking
+    public void logUnchoking(int neighbor) {
+        String message = "[" + fetchCurrentTime() + "]: Peer " + neighbor + " is unchoked by "
+                + peerId + ".\n";
+
+        logMessage(message);
+    }
+
+    // NOTE: only the server thread should call this since it's the one doing the
+    // choking
+    public void logChoking(int neighbor) {
+        String message = "[" + fetchCurrentTime() + "]: Peer " + neighbor + " is choked by "
+                + peerId + ".\n";
+
+        logMessage(message);
+    }
+
+    // NOTE: only the client thread should call this since it's the one receiving
+    // the 'have' message
+    public void logReceivingHaveMessage(int neighbor, int pieceIndex) {
+        String message = "[" + fetchCurrentTime() + "]: Peer " + peerId + " received the 'have' message from "
+                + neighbor + " for the piece " + pieceIndex + ".\n";
+
+        logMessage(message);
+    }
+
+    // NOTE: only the server thread should call this since it's the one receiving
+    // the 'interested' message
+    public void logReceivingInterestedMessage(int neighbor) {
+        String message = "[" + fetchCurrentTime() + "]: Peer " + peerId + " received the 'interested' message from "
+                + neighbor + ".\n";
+
+        logMessage(message);
+    }
+
+    // NOTE: only the server thread should call this since it's the one receiving
+    // the 'not interested' message
+    public void logReceivingNotInterestedMessage(int neighbor) {
+        String message = "[" + fetchCurrentTime() + "]: Peer " + peerId + " received the 'not interested' message from "
+                + neighbor + ".\n";
+
+        logMessage(message);
+    }
+
+    // NOTE: only the client thread should call this since it's the one downloading
+    // the piece
+    public void logDownloadingPiece(int downloadedFrom, int pieceIndex) {
+        String message = "[" + fetchCurrentTime() + "]: Peer " + peerId + " has downloaded the piece "
+                + pieceIndex + " from " + downloadedFrom + ".\n";
+
+        logMessage(message);
+    }
+
+    // NOTE: only the client thread should call this since it's the one downloading
+    public void logDownloadCompletion() {
+        String message = "[" + fetchCurrentTime() + "]: Peer " + peerId + " has downloaded the complete file.\n";
 
         logMessage(message);
     }
