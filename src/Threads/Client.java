@@ -7,19 +7,27 @@ import java.nio.channels.*;
 import java.util.*;
 import FileIO.Logger;
 
+//Used to create a shared boolean variable between child and parent threads
+import java.util.concurrent.atomic.AtomicBoolean;
+
+
 import Messages.Handshake;
 
 public class Client extends Thread {
 	private int peerID;
 	private HashMap<Integer, String[]> neighboringPeers;
 	private byte[] bitfield; // TODO: maybe convert this back to be a boolean array
+	private boolean[] convertedBitField;
 	private Logger logger;
+	private AtomicBoolean hasFullFile;
 
-	public Client(int peerID, HashMap<Integer, String[]> neighboringPeers, byte[] bitfield, Logger logger) {
+	public Client(int peerID, HashMap<Integer, String[]> neighboringPeers, byte[] bitfield, Logger logger, AtomicBoolean hasFullFile) {
 		this.peerID = peerID;
 		this.neighboringPeers = neighboringPeers;
 		this.bitfield = bitfield;
 		this.logger = logger;
+		this.hasFullFile = hasFullFile;
+		this.convertedBitField = byteArrayToBooleanArray(bitfield);
 	}
 
 	// FIXME: when a client spawns, it'll only connect to the servers that
@@ -71,15 +79,40 @@ public class Client extends Thread {
 				// loop of sending/receiving messages
 
 				// while client does not have full file
-
-				while(true){
+				if(!hasFullFile.get()){
 					sendInterestedMessage(socket);
-					// Break to prevent infinite loop
-					break;
+					while(!hasFullFile.get()){
+						// get index of missing piece
+						int missingPiece = checkHasFullFile();
+
+						// -1 return means full file
+						if(missingPiece == -1){break;}
+
+						//Send request for missing piece
+						sendRequestMessage(socket, missingPiece);
+
+						// Receive response
+						byte[] serverResponse = receiveServerMessage(socket);
+						int messageType = extractType(serverResponse);
+						
+						//Log response received
+						if(messageType == 4){
+							logger.logReceivingHaveMessage(serverId, missingPiece);
+							logger.logDownloadingPiece(serverId, missingPiece);
+							// TODO Get file
+							addPieceToBitfield(missingPiece);
+						}
+						
+
+						
+					}
+
 				}
 
-				//When client has full file send not interested 
+				//When client has full file send not interested
+				logger.logDownloadCompletion();
 				sendNotInterestedMessage(socket);
+
 
 
 				// TODO: add new client-server connection to peer list I think
@@ -219,10 +252,11 @@ public class Client extends Thread {
      * Second variant of function to be used for messages for the "have" and
      * "request" message types
      * 
-     * @param type  size of file in bytes, grabbed from config file
-     * @param index payload for messages of type 4 and 6
+     * @param type  4 for confirming having a piece, 6 for requesting piece
+     * @param index index of piece
      * @return byte array representing a message sent by a peer process
      */
+
     private static byte[] createMessage(int type, int index) {
 
         int size = 9;
@@ -329,6 +363,110 @@ public class Client extends Thread {
 		} catch (IOException e) {
 			System.err.println(e);
 		}
+	}
+
+		/**
+	 * Constructs not interested message and sends to server
+	 * 
+	 * @param socket   communication socket between client peer and server peer
+	 */
+
+	private void sendRequestMessage(Socket socket, int index) {
+		try {
+			ObjectOutputStream outStream = new ObjectOutputStream(socket.getOutputStream());
+			byte[] requestMessage = createMessage(6, index);
+			outStream.writeObject(requestMessage);
+		} catch (IOException e) {
+			System.err.println(e);
+		}
+	}
+
+	//Copy from peer processing
+
+	 /**
+     * sets piece inside bitfield to be true, meaning peer has that piece
+     * 
+     * @param pieceIndex the index of the piece in the bitfield
+     */
+
+	 private void addPieceToBitfield(int pieceIndex) {
+        convertedBitField[pieceIndex] = true;
+    }
+
+    /**
+     * checks bitfield for all 1s (full file) if not exit and return index of first
+     * missing piece
+     * 
+     * @return index of first missing piece, -1 if has full file
+     */
+
+    private int checkHasFullFile() {
+        if (hasFullFile.get()) {
+            return -1;
+        }
+
+        // return index of first missing piece
+        for (int i = 0; i < convertedBitField.length; i++) {
+            if (!convertedBitField[i]) {
+                return i;
+            }
+        }
+
+        // peer process proven to have full file
+        hasFullFile.set(true);
+        return -1;
+    }
+
+	/**
+     * Converts byte[] bitfield to boolean representation
+     * 
+     * @return boolean representation of bitfield
+     */
+
+    private static boolean[] byteArrayToBooleanArray(byte[] bitfield) {
+        boolean[] booleanBitField = new boolean[bitfield.length * 8];
+
+        for (int i = 0; i < bitfield.length; i++) {
+            for (int j = 0; j < 8; j++) {
+                booleanBitField[i * 8 + j] = (bitfield[i] & (1 << (7 - j))) != 0;
+            }
+        }
+
+        return booleanBitField;
+    }
+
+	/**
+     * Function to extract message type
+     * 
+     * @param message message byte array containing message header
+
+     * @return int representing type of message received 
+     */
+
+	 private static int extractType(byte[] message) {
+
+		// message type resides in 5th index
+		int type = message[4] & 0xFF; 
+		return type;
+    }
+
+	/**
+	 * Gets generic message from server
+	 * 
+	 * @param socket   communication socket between client peer and server peer
+	 */
+	private byte[] receiveServerMessage(Socket socket) {
+		byte[] message = null;
+		try {
+			ObjectInputStream inStream = new ObjectInputStream(socket.getInputStream());
+			message = (byte[]) inStream.readObject();
+		} catch (IOException e) {
+			System.err.println(e);
+		} catch (ClassNotFoundException e) {
+			System.err.println(e);
+		}
+
+		return message;
 	}
 
 }

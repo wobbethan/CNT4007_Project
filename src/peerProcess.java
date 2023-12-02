@@ -27,7 +27,7 @@ public class peerProcess extends Thread {
     private static HashMap<Integer, String[]> neighboringPeers; // key = peerID, value = peerInfo config string tokens
     private String hostName;
     private int listeningPort; 
-    private boolean hasFullFile;
+    private AtomicBoolean hasFullFile = new AtomicBoolean(false);
     private static boolean[] bitfield;
 
     public peerProcess(int peerID) {
@@ -57,14 +57,17 @@ public class peerProcess extends Thread {
         peer.numPeers = neighboringPeers.size();
         peer.hostName = neighboringPeers.get(peer.peerID)[0];
         peer.listeningPort = Integer.parseInt(neighboringPeers.get(peer.peerID)[1]);
-        peer.hasFullFile = neighboringPeers.get(peer.peerID)[2].equals("1") ? true : false;
+
+        // Modified statement to work with Atomic boolean
+        peer.hasFullFile.set(neighboringPeers.get(peer.peerID)[2].equals("1") ? true : false);
 
         // spin up logger
         peer.logger = new Logger(peer.peerID);
 
         bitfield = new boolean[(int) Math.ceil(peer.fileSize / peer.pieceSize)];
 
-        if (peer.hasFullFile) {
+        //.get() extracts boolean value from atomic
+        if (peer.hasFullFile.get()) {
             // set entire bitfield to 1s
             for (int i = 0; i < bitfield.length; i++) {
                 bitfield[i] = true;
@@ -85,8 +88,7 @@ public class peerProcess extends Thread {
             serverThread.start();
 
             // create and run client thread
-            Client clientThread = new Client(peer.peerID, neighboringPeers,
-                    convertBitfieldToByteArray(peer.fileSize, peer.pieceSize), peer.logger);
+            Client clientThread = new Client(peer.peerID, neighboringPeers, convertBitfieldToByteArray(peer.fileSize, peer.pieceSize), peer.logger, peer.hasFullFile);
             clientThread.start();
         }
     }
@@ -109,7 +111,7 @@ public class peerProcess extends Thread {
      */
 
     public int checkHasFullFile() {
-        if (hasFullFile) {
+        if (hasFullFile.get()) {
             return -1;
         }
 
@@ -121,7 +123,7 @@ public class peerProcess extends Thread {
         }
 
         // peer process proven to have full file
-        hasFullFile = true;
+        hasFullFile.set(true);
         return -1;
     }
 

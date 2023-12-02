@@ -147,4 +147,11 @@ public class Logger {
                 + neighbor + ".\n";
         logMessage(message);
     }
+
+        // NOTE: Used for testing purposes
+    public void logRequestReceived(int neighbor, int index) {
+      String message = "[" + fetchCurrentTime() + "]: Peer " + peerId + " has recieved a request from "
+                + neighbor + " for piece " + (++index)+ ".\n";
+        logMessage(message);
+    }
 }
