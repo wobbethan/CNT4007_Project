@@ -97,9 +97,9 @@ public class Server extends Thread {
 							logger.logRequestReceived(clientId, index);
 
 							// Return have message if server has piece
-							if(convertedBitField[index]){
+							//if(convertedBitField[index]){
 								sendHaveMessage(socket, index);
-							}
+							//}
 						}
 
 						// Break to prevent infinite loop

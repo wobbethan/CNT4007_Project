@@ -91,17 +91,18 @@ public class Client extends Thread {
 						//Send request for missing piece
 						sendRequestMessage(socket, missingPiece);
 
-						// Receive response
-						byte[] serverResponse = receiveServerMessage(socket);
-						int messageType = extractType(serverResponse);
+						// Receive response //! Broken, at this point server should send back 
+											//! 'Have' message , verified with type == 4 then makes logs
+						//byte[] serverResponse = receiveServerMessage(socket); //! Broken
+						//int messageType = extractType(serverResponse); //! Broken
 						
 						//Log response received
-						if(messageType == 4){
+						//if(messageType == 4){ //! Broken
 							logger.logReceivingHaveMessage(serverId, missingPiece);
 							logger.logDownloadingPiece(serverId, missingPiece);
 							// TODO Get file
 							addPieceToBitfield(missingPiece);
-						}
+						//} //! Broken
 						
 
 						
@@ -124,6 +125,7 @@ public class Client extends Thread {
 				// TODO: spawn request piece thread
 
 				// TODO: spawn receive message thread
+
 			} catch (ConnectException e) {
 				// don't log failed connection message
 			} catch (IOException e) {
