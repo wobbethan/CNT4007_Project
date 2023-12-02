@@ -61,9 +61,26 @@ public class Client extends Thread {
 
 				// send client's bitfield to server
 				sendServerBitfield(socket, bitfield);
+				logger.logBitfieldSent(serverId);
 
 				// receive server's bitfield
-				byte[] serverBitfield = receiveServerBitfield(socket);
+				byte[] serverBitfieldMessage = receiveServerBitfieldMessage(socket);
+				byte[] serverBitfield = extractPayload(serverBitfieldMessage);
+				logger.logBitfieldReceived(serverId);
+
+				// loop of sending/receiving messages
+
+				// while client does not have full file
+
+				while(true){
+					sendInterestedMessage(socket);
+					// Break to prevent infinite loop
+					break;
+				}
+
+				//When client has full file send not interested 
+				sendNotInterestedMessage(socket);
+
 
 				// TODO: add new client-server connection to peer list I think
 
@@ -124,18 +141,18 @@ public class Client extends Thread {
 	 * @param socket communication socket between client peer and server peer
 	 * @return bitfield message as a byte[]
 	 */
-	private byte[] receiveServerBitfield(Socket socket) {
-		byte[] bitfield = null;
+	private byte[] receiveServerBitfieldMessage(Socket socket) {
+		byte[] bitfieldMessage = null;
 		try {
 			ObjectInputStream inStream = new ObjectInputStream(socket.getInputStream());
-			bitfield = (byte[]) inStream.readObject();
+			bitfieldMessage = (byte[]) inStream.readObject();
 		} catch (IOException e) {
 			System.err.println(e);
 		} catch (ClassNotFoundException e) {
 			System.err.println(e);
 		}
 
-		return bitfield;
+		return bitfieldMessage;
 	}
 
 	/**
@@ -147,7 +164,8 @@ public class Client extends Thread {
 	private void sendServerBitfield(Socket socket, byte[] bitfield) {
 		try {
 			ObjectOutputStream outStream = new ObjectOutputStream(socket.getOutputStream());
-			outStream.writeObject(bitfield);
+			byte[] generatedMessage = createMessage(5, bitfield);
+			outStream.writeObject(generatedMessage);
 		} catch (IOException e) {
 			System.err.println(e);
 		}
@@ -168,6 +186,149 @@ public class Client extends Thread {
 		}
 
 		System.out.println();
+	}
+
+	/**
+     * First variant of function to be used for messages for the first 4 message
+     * types
+     * 
+     * @param type size of file in bytes, grabbed from config file
+     * @return byte array representing a message sent by a peer process
+     */
+    private static byte[] createMessage(int type) {
+
+        int size = 5;
+
+        // create message array
+        byte[] message = new byte[5];
+
+        // write size
+        message[0] = 0;
+        message[1] = 0;
+        message[2] = 0;
+        message[3] = (byte) size;
+
+        // write message type
+        message[4] = (byte) type;
+
+        return message;
+
+    }
+
+    /**
+     * Second variant of function to be used for messages for the "have" and
+     * "request" message types
+     * 
+     * @param type  size of file in bytes, grabbed from config file
+     * @param index payload for messages of type 4 and 6
+     * @return byte array representing a message sent by a peer process
+     */
+    private static byte[] createMessage(int type, int index) {
+
+        int size = 9;
+
+        // create message array
+        byte[] message = new byte[size];
+
+        // write size
+        message[0] = 0;
+        message[1] = 0;
+        message[2] = 0;
+        message[3] = (byte) size;
+
+        // write message type
+        message[4] = (byte) type;
+
+        message[5] = (byte) (index >> 24);
+        message[6] = (byte) (index >> 16);
+        message[7] = (byte) (index >> 8);
+        message[8] = (byte) index;
+
+        return message;
+
+    }
+
+    /**
+     * Third variant of function to be used for messages for the "bitfield" and
+     * "piece" message types
+     * 
+     * @param type    size of file in bytes, grabbed from config file
+     * @param payload payload for messages of type 5 (where payload is bitfield) and
+     *                7 (where payload is a piece)
+     * @return byte array representing a message sent by a peer process
+     */
+
+    private static byte[] createMessage(int type, byte[] payload) {
+
+        int size = 5 + payload.length;
+
+        // create message array
+        byte[] message = new byte[size];
+
+        // write size
+        message[0] = (byte) (size >> 24);
+        message[1] = (byte) (size >> 16);
+        message[2] = (byte) (size >> 8);
+        message[3] = (byte) size;
+
+        // write message type
+        message[4] = (byte) type;
+
+        for (int i = 0; i < payload.length; i++) {
+            message[i + 5] = payload[i];
+        }
+
+        return message;
+
+    }
+
+	/**
+     * Function to extract payload from message
+     * payload can be bitfield or piece
+     * 
+     * @param message message byte array containing message header and payload
+
+     * @return byte array representing the payload from the message
+     */
+
+    private static byte[] extractPayload(byte[] message) {
+
+		// Copy message array after 5 bytes, first 5 are header
+        byte[] payload = Arrays.copyOfRange(message, 5, message.length);
+
+		return payload;
+    }
+
+	/**
+	 * Constructs interested message and sends to server
+	 * 
+	 * @param socket   communication socket between client peer and server peer
+	 */
+
+	private void sendInterestedMessage(Socket socket) {
+		try {
+			ObjectOutputStream outStream = new ObjectOutputStream(socket.getOutputStream());
+			byte[] generatedMessage = createMessage(2);
+			outStream.writeObject(generatedMessage);
+		} catch (IOException e) {
+			System.err.println(e);
+		}
+	}
+
+	/**
+	 * Constructs not interested message and sends to server
+	 * 
+	 * @param socket   communication socket between client peer and server peer
+	 */
+
+	private void sendNotInterestedMessage(Socket socket) {
+		try {
+			ObjectOutputStream outStream = new ObjectOutputStream(socket.getOutputStream());
+			byte[] generatedMessage = createMessage(3);
+			outStream.writeObject(generatedMessage);
+		} catch (IOException e) {
+			System.err.println(e);
+		}
 	}
 
 }

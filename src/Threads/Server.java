@@ -63,9 +63,43 @@ public class Server extends Thread {
 
 				// send server's bitfield to client
 				sendClientBitfield(socket, bitfield);
+				logger.logBitfieldSent(clientId);
 
 				// receive bitfield from client
-				byte[] clientBitfield = receiveClientBitfield(socket);
+				byte[] clientBitfieldMessage = receiveClientBitfield(socket);
+				byte[] clientBitfield = extractPayload(clientBitfieldMessage);
+				logger.logBitfieldReceived(clientId);
+
+				// loop of sending pieces / receiving request messages
+
+				// Receive first message (should be interested or not interested)
+				byte[] clientMessage = receiveClientMessage(socket);
+				int messageType = extractType(clientMessage);
+
+				// If the client is interested
+				if(messageType == 2){
+					// Log reception of interested message
+					logger.logReceivingInterestedMessage(clientId);
+
+					// Until client sends not interested 
+					while (messageType != 3) {
+						//TODO receive and send piece requests
+
+						// Break to prevent infinite loop
+						break;
+						
+					}
+					// Log reception of not interested message 
+					logger.logReceivingNotInterestedMessage(clientId);
+
+					
+				}
+				// If the client is not interested
+				else if(messageType == 3){
+					// Log reception of not interested message 
+					logger.logReceivingNotInterestedMessage(clientId);
+				}
+
 
 				// TODO: log tcp connection established
 
@@ -149,10 +183,47 @@ public class Server extends Thread {
 	private void sendClientBitfield(Socket socket, byte[] bitfield) {
 		try {
 			ObjectOutputStream outStream = new ObjectOutputStream(socket.getOutputStream());
-			outStream.writeObject(bitfield);
+			byte[] generatedMessage = createMessage(5, bitfield);
+			outStream.writeObject(generatedMessage);
 		} catch (IOException e) {
 			System.err.println(e);
 		}
+	}
+
+	/**
+	 * sends the client peer a bitfield message from the server peer over the socket
+	 * 
+	 * @param socket   communication socket between client peer and server peer
+	 * @param bitfield the server's bitfield as a byte[]
+	 */
+	private void sendClientPiece(Socket socket, byte[] bitfield) {
+		try {
+			ObjectOutputStream outStream = new ObjectOutputStream(socket.getOutputStream());
+			byte[] generatedMessage = createMessage(5, bitfield);
+			outStream.writeObject(generatedMessage);
+		} catch (IOException e) {
+			System.err.println(e);
+		}
+	}
+
+	/**
+	 * sends the client peer a bitfield message from the server peer over the socket
+	 * 
+	 * @param socket   communication socket between client peer and server peer
+	 * @param bitfield the server's bitfield as a byte[]
+	 */
+	private byte[] receiveClientMessage(Socket socket) {
+		byte[] message = null;
+		try {
+			ObjectInputStream inStream = new ObjectInputStream(socket.getInputStream());
+			message = (byte[]) inStream.readObject();
+		} catch (IOException e) {
+			System.err.println(e);
+		} catch (ClassNotFoundException e) {
+			System.err.println(e);
+		}
+
+		return message;
 	}
 
 	/**
@@ -171,5 +242,130 @@ public class Server extends Thread {
 
 		System.out.println();
 	}
+
+	/**
+     * First variant of function to be used for messages for the first 4 message
+     * types
+     * 
+     * @param type size of file in bytes, grabbed from config file
+     * @return byte array representing a message sent by a peer process
+     */
+    private static byte[] createMessage(int type) {
+
+        int size = 5;
+
+        // create message array
+        byte[] message = new byte[5];
+
+        // write size
+        message[0] = 0;
+        message[1] = 0;
+        message[2] = 0;
+        message[3] = (byte) size;
+
+        // write message type
+        message[4] = (byte) type;
+
+        return message;
+
+    }
+
+    /**
+     * Second variant of function to be used for messages for the "have" and
+     * "request" message types
+     * 
+     * @param type  size of file in bytes, grabbed from config file
+     * @param index payload for messages of type 4 and 6
+     * @return byte array representing a message sent by a peer process
+     */
+    private static byte[] createMessage(int type, int index) {
+
+        int size = 9;
+
+        // create message array
+        byte[] message = new byte[size];
+
+        // write size
+        message[0] = 0;
+        message[1] = 0;
+        message[2] = 0;
+        message[3] = (byte) size;
+
+        // write message type
+        message[4] = (byte) type;
+
+        message[5] = (byte) (index >> 24);
+        message[6] = (byte) (index >> 16);
+        message[7] = (byte) (index >> 8);
+        message[8] = (byte) index;
+
+        return message;
+
+    }
+
+    /**
+     * Third variant of function to be used for messages for the "bitfield" and
+     * "piece" message types
+     * 
+     * @param type    size of file in bytes, grabbed from config file
+     * @param payload payload for messages of type 5 (where payload is bitfield) and
+     *                7 (where payload is a piece)
+     * @return byte array representing a message sent by a peer process
+     */
+
+    private static byte[] createMessage(int type, byte[] payload) {
+
+        int size = 5 + payload.length;
+
+        // create message array
+        byte[] message = new byte[size];
+
+        // write size
+        message[0] = (byte) (size >> 24);
+        message[1] = (byte) (size >> 16);
+        message[2] = (byte) (size >> 8);
+        message[3] = (byte) size;
+
+        // write message type
+        message[4] = (byte) type;
+
+        for (int i = 0; i < payload.length; i++) {
+            message[i + 5] = payload[i];
+        }
+
+        return message;
+
+    }
+
+	/**
+     * Function to extract payload from message
+     * payload can be bitfield or piece
+     * 
+     * @param message message byte array containing message header and payload
+
+     * @return byte array representing the payload from the message
+     */
+
+	 private static byte[] extractPayload(byte[] message) {
+
+        byte[] payload = Arrays.copyOfRange(message, 5, message.length);
+
+		return payload;
+    }
+
+	/**
+     * Function to extract message type
+     * 
+     * @param message message byte array containing message header
+
+     * @return int representing type of message received 
+     */
+
+	 private static int extractType(byte[] message) {
+
+		// message type resides in 5th index
+		int type = message[4] & 0xFF; 
+		return type;
+    }
 
 }
