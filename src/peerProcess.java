@@ -9,11 +9,12 @@ import Threads.Server;
 
 public class peerProcess extends Thread {
     private int peerID;
+    private Logger logger;
 
     // retrieved from Common config
     private String fileName;
-    private static int fileSize;
-    private static int pieceSize;
+    private int fileSize;
+    private int pieceSize;
     private int unchokingInterval;
     private int OptimisticUnchokingInterval;
     private int numPreferredNeighbors;
@@ -55,7 +56,8 @@ public class peerProcess extends Thread {
         peer.listeningPort = Integer.parseInt(neighboringPeers.get(peer.peerID)[1]);
         peer.hasFullFile = neighboringPeers.get(peer.peerID)[2].equals("1") ? true : false;
 
-        // TODO: spin up logger
+        // spin up logger
+        peer.logger = new Logger(peer.peerID);
 
         bitfield = new boolean[(int) Math.ceil(peer.fileSize / peer.pieceSize)];
 
@@ -69,19 +71,19 @@ public class peerProcess extends Thread {
 
             // create and run server thread only
             Server serverThread = new Server(peer.listeningPort, peer.peerID, neighboringPeers,
-                    convertBitfieldToByteArray(fileSize, pieceSize));
+                    convertBitfieldToByteArray(peer.fileSize, peer.pieceSize), peer.logger);
             serverThread.start();
         } else {
             // TODO: create new empty piece hashmap
 
             // create and run server thread
             Server serverThread = new Server(peer.listeningPort, peer.peerID, neighboringPeers,
-                    convertBitfieldToByteArray(fileSize, pieceSize));
+                    convertBitfieldToByteArray(peer.fileSize, peer.pieceSize), peer.logger);
             serverThread.start();
 
             // create and run client thread
             Client clientThread = new Client(peer.peerID, neighboringPeers,
-                    convertBitfieldToByteArray(fileSize, pieceSize));
+                    convertBitfieldToByteArray(peer.fileSize, peer.pieceSize), peer.logger);
             clientThread.start();
         }
     }
@@ -146,72 +148,76 @@ public class peerProcess extends Thread {
         return byteArray;
     }
 
-    //TODO Function to determine type of message needed
-;
+    // TODO Function to determine type of message needed
+    ;
+
     /**
-     * First variant of function to be used for messages for the first 4 message types
+     * First variant of function to be used for messages for the first 4 message
+     * types
      * 
-     * @param type  size of file in bytes, grabbed from config file
+     * @param type size of file in bytes, grabbed from config file
      * @return byte array representing a message sent by a peer process
      */
     public static byte[] createMessage(int type) {
 
         int size = 5;
 
-        //create message array
+        // create message array
         byte[] message = new byte[5];
 
-        //write size
+        // write size
         message[0] = 0;
         message[1] = 0;
         message[2] = 0;
         message[3] = (byte) size;
 
-        //write message type
-        message[4] = (byte)type;
+        // write message type
+        message[4] = (byte) type;
 
         return message;
 
     }
 
     /**
-     * Second variant of function to be used for messages for the "have" and "request" message types
+     * Second variant of function to be used for messages for the "have" and
+     * "request" message types
      * 
      * @param type  size of file in bytes, grabbed from config file
-     * @param index  payload for messages of type 4 and 6
+     * @param index payload for messages of type 4 and 6
      * @return byte array representing a message sent by a peer process
      */
     public static byte[] createMessage(int type, int index) {
 
         int size = 9;
 
-        //create message array
+        // create message array
         byte[] message = new byte[size];
 
-        //write size
+        // write size
         message[0] = 0;
         message[1] = 0;
         message[2] = 0;
         message[3] = (byte) size;
 
-        //write message type
-        message[4] = (byte)type;
+        // write message type
+        message[4] = (byte) type;
 
         message[5] = (byte) (index >> 24);
         message[6] = (byte) (index >> 16);
         message[7] = (byte) (index >> 8);
         message[8] = (byte) index;
 
-
         return message;
 
     }
 
     /**
-     * Third variant of function to be used for messages for the "bitfield" and "piece" message types
+     * Third variant of function to be used for messages for the "bitfield" and
+     * "piece" message types
      * 
-     * @param type  size of file in bytes, grabbed from config file
-     * @param payload  payload for messages of type 5 (where payload is bitfield) and 7 (where payload is a piece)
+     * @param type    size of file in bytes, grabbed from config file
+     * @param payload payload for messages of type 5 (where payload is bitfield) and
+     *                7 (where payload is a piece)
      * @return byte array representing a message sent by a peer process
      */
 
@@ -219,26 +225,24 @@ public class peerProcess extends Thread {
 
         int size = 5 + payload.length;
 
-        //create message array
+        // create message array
         byte[] message = new byte[size];
 
-        //write size
+        // write size
         message[0] = (byte) (size >> 24);
         message[1] = (byte) (size >> 16);
         message[2] = (byte) (size >> 8);
         message[3] = (byte) size;
 
-        //write message type
-        message[4] = (byte)type;
+        // write message type
+        message[4] = (byte) type;
 
-        for(int i = 0; i < payload.length; i++){
-            message[i+5] = payload[i];
+        for (int i = 0; i < payload.length; i++) {
+            message[i + 5] = payload[i];
         }
-        
+
         return message;
 
     }
-
-
 
 }

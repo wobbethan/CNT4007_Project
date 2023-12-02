@@ -5,6 +5,7 @@ import java.io.*;
 import java.nio.*;
 import java.nio.channels.*;
 import java.util.*;
+import FileIO.Logger;
 
 import Messages.Handshake;
 
@@ -13,12 +14,14 @@ public class Server extends Thread {
 	private int peerId;
 	private HashMap<Integer, String[]> neighboringPeers;
 	private byte[] bitfield; // TODO: maybe convert this back to be a boolean array
+	private Logger logger;
 
-	public Server(int portNum, int peerId, HashMap<Integer, String[]> neighboringPeers, byte[] bitfield) {
+	public Server(int portNum, int peerId, HashMap<Integer, String[]> neighboringPeers, byte[] bitfield, Logger logger) {
 		this.portNum = portNum;
 		this.peerId = peerId;
 		this.neighboringPeers = neighboringPeers;
 		this.bitfield = bitfield;
+		this.logger = logger;
 	}
 
 	@Override
@@ -38,8 +41,6 @@ public class Server extends Thread {
 
 				String clientTranslated = new String(clientHandshake, "US-ASCII");
 
-				System.out.println("server thread: " + new String(clientHandshake, "US-ASCII"));
-
 				// check handshake validity (correct format)
 				if (!clientTranslated.substring(0, 28).equals("P2PFILESHARINGPROJ0000000000")) {
 					System.err.println("Invalid handshake format recieved from server");
@@ -58,12 +59,13 @@ public class Server extends Thread {
 					continue;
 				}
 
+				logger.logTCPConnection(clientId);
+
 				// send server's bitfield to client
 				sendClientBitfield(socket, bitfield);
 
 				// receive bitfield from client
 				byte[] clientBitfield = receiveClientBitfield(socket);
-				printByteArrayAsBinary(clientBitfield);
 
 				// TODO: log tcp connection established
 
