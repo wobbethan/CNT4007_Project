@@ -26,7 +26,7 @@ public class peerProcess extends Thread {
     private int numPeers;
     private static HashMap<Integer, String[]> neighboringPeers; // key = peerID, value = peerInfo config string tokens
     private String hostName;
-    private int listeningPort; 
+    private int listeningPort;
     private AtomicBoolean hasFullFile = new AtomicBoolean(false);
     private static boolean[] bitfield;
 
@@ -66,7 +66,7 @@ public class peerProcess extends Thread {
 
         bitfield = new boolean[(int) Math.ceil(peer.fileSize / peer.pieceSize)];
 
-        //.get() extracts boolean value from atomic
+        // .get() extracts boolean value from atomic
         if (peer.hasFullFile.get()) {
             // set entire bitfield to 1s
             for (int i = 0; i < bitfield.length; i++) {
@@ -77,18 +77,21 @@ public class peerProcess extends Thread {
 
             // create and run server thread only
             Server serverThread = new Server(peer.listeningPort, peer.peerID, neighboringPeers,
-                    convertBitfieldToByteArray(bitfield), peer.logger, peer.OptimisticUnchokingInterval);
+                    convertBitfieldToByteArray(bitfield), peer.logger, peer.OptimisticUnchokingInterval,
+                    peer.unchokingInterval, peer.numPreferredNeighbors);
             serverThread.start();
         } else {
             // TODO: create new empty piece hashmap
 
             // create and run server thread
             Server serverThread = new Server(peer.listeningPort, peer.peerID, neighboringPeers,
-                    convertBitfieldToByteArray(bitfield), peer.logger, peer.OptimisticUnchokingInterval);
+                    convertBitfieldToByteArray(bitfield), peer.logger, peer.OptimisticUnchokingInterval,
+                    peer.unchokingInterval, peer.numPreferredNeighbors);
             serverThread.start();
 
             // create and run client thread
-            Client clientThread = new Client(peer.peerID, neighboringPeers, convertBitfieldToByteArray(bitfield), peer.logger, peer.hasFullFile, (int)(Math.ceil((peer.fileSize/peer.pieceSize))));
+            Client clientThread = new Client(peer.peerID, neighboringPeers, convertBitfieldToByteArray(bitfield),
+                    peer.logger, peer.hasFullFile, (int) (Math.ceil((peer.fileSize / peer.pieceSize))));
             clientThread.start();
         }
     }
@@ -153,7 +156,6 @@ public class peerProcess extends Thread {
         return byteArray;
     }
 
-
     private static byte[] convertBitfieldToByteArray(boolean[] booleanArray) {
         int numBytes = (int) Math.ceil(booleanArray.length / 8.0);
         byte[] byteArray = new byte[numBytes];
@@ -170,7 +172,5 @@ public class peerProcess extends Thread {
     }
 
     // TODO Function to determine type of message needed
-    
-
 
 }
