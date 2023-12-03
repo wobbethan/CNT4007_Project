@@ -43,6 +43,7 @@ public class Client extends Thread {
 					continue;
 
 				Socket socket = new Socket(neighboringPeers.get(id)[0], Integer.parseInt(neighboringPeers.get(id)[1]));
+				InputStream inputStream = socket.getInputStream();
 
 				// send handshake to server
 				Handshake clientHandshake = new Handshake(peerID);
@@ -77,44 +78,71 @@ public class Client extends Thread {
 				byte[] serverBitfield = extractPayload(serverBitfieldMessage);
 				logger.logBitfieldReceived(serverId);
 
-				// loop of sending/receiving messages
+				// // loop of sending/receiving messages
 
-				// while client does not have full file
-				if(!hasFullFile.get()){
-					sendInterestedMessage(socket);
-					while(!hasFullFile.get()){
-						// get index of missing piece
-						int missingPiece = checkHasFullFile();
+				// // while client does not have full file
+				// if(!hasFullFile.get()){
+				// 	sendInterestedMessage(socket);
+				// 	while(!hasFullFile.get()){
+				// 		// get index of missing piece
+				// 		int missingPiece = checkHasFullFile();
 
-						// -1 return means full file
-						if(missingPiece == -1 || hasFullFile.get() == true){
-							break;
-						}
+				// 		// -1 return means full file
+				// 		if(missingPiece == -1 || hasFullFile.get() == true){
+				// 			break;
+				// 		}
 
-						//Send request for missing piece
-						sendRequestMessage(socket, missingPiece);
+				// 		//Send request for missing piece
+				// 		sendRequestMessage(socket, missingPiece);
 
-						// Receive response 
-						byte[] serverResponse = receiveServerMessage(socket); 
-						int messageType = extractType(serverResponse);
+				// 		// Receive response 
+				// 		byte[] serverResponse = receiveServerMessage(socket); 
+				// 		int messageType = extractType(serverResponse);
 						
-						//Log response received
-						if(messageType == 4){
-							logger.logReceivingHaveMessage(serverId, missingPiece);
-							logger.logDownloadingPiece(serverId, missingPiece);
-							// TODO Get file
-							addPieceToBitfield(missingPiece);
-						} 
+				// 		//Log response received
+				// 		if(messageType == 4){
+				// 			logger.logReceivingHaveMessage(serverId, missingPiece);
+				// 			logger.logDownloadingPiece(serverId, missingPiece);
+				// 			// TODO Get file
+				// 			addPieceToBitfield(missingPiece);
+				// 		} 
 						
 
 						
+				// 	}
+
+				// }
+
+				// //When client has full file send not interested
+				// logger.logDownloadCompletion();
+				// sendNotInterestedMessage(socket);
+
+				// Loop for every neightbor
+				for (int key : neighboringPeers.keySet()) {
+					// set current peer = to value in neighboring peers
+					int currentPeer = key;
+
+					// Open socket between this peerprocess and neighbor
+					//Socket socket = new Socket(neighboringPeers.get(id)[0], Integer.parseInt(neighboringPeers.get(id)[1]));
+					//InputStream inputStream = socket.getInputStream();
+
+					//if socket has a message to be read
+					if(inputStream.available() > 0){
+						//Receieve message
+				 		byte[] serverResponse = receiveServerMessage(socket); 
+				 		int messageType = extractType(serverResponse);
+
+						 if(messageType == 6){
+							// Get index for requested piece
+							byte[] payload = extractPayload(clientMessage);
+							int index = byteArrayToInt(payload);
+							logger.logRequestReceived(clientId, index);
+							
+
 					}
 
+					
 				}
-
-				//When client has full file send not interested
-				logger.logDownloadCompletion();
-				sendNotInterestedMessage(socket);
 
 
 
