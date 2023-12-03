@@ -433,15 +433,4 @@ public class Server extends Thread {
         return booleanBitField;
     }
 
-	// /**
-    //  * check if Server has requested piece
-    //  * 
-    //  * @return boolean representation of if server has piece
-    //  */
-
-	// private static boolean[] checkHasPiece(int index) {
-
-    //     return convertedBitField[index];
-    // }
-
 }

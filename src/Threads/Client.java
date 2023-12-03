@@ -16,7 +16,7 @@ import Messages.Handshake;
 public class Client extends Thread {
 	private int peerID;
 	private HashMap<Integer, String[]> neighboringPeers;
-	private byte[] bitfield; // TODO: maybe convert this back to be a boolean array
+	private byte[] bitfield; ///// TODO: maybe convert this back to be a boolean array
 	private boolean[] convertedBitField;
 	private Logger logger;
 	private AtomicBoolean hasFullFile;
@@ -33,6 +33,7 @@ public class Client extends Thread {
 	// FIXME: when a client spawns, it'll only connect to the servers that
 	// are active. when a new peer joins the network, this client peer will not try
 	// to connect to the new ones
+
 	public void run() {
 		// try to connect to every peer in the network
 		for (Integer id : neighboringPeers.keySet()) {
@@ -141,6 +142,7 @@ public class Client extends Thread {
 	 * @param socket communication socket between client peer and server peer
 	 * @return handshake message as a byte[]
 	 */
+
 	private byte[] receiveServerHandshake(Socket socket) {
 		byte[] handshake = null;
 		try {
@@ -162,6 +164,7 @@ public class Client extends Thread {
 	 * @param socket    communication socket between client peer and server peer
 	 * @param handshake handshake message as a byte[]
 	 */
+
 	private void sendServerHandshake(Socket socket, byte[] handshake) {
 		try {
 			ObjectOutputStream outStream = new ObjectOutputStream(socket.getOutputStream());
@@ -177,6 +180,7 @@ public class Client extends Thread {
 	 * @param socket communication socket between client peer and server peer
 	 * @return bitfield message as a byte[]
 	 */
+
 	private byte[] receiveServerBitfieldMessage(Socket socket) {
 		byte[] bitfieldMessage = null;
 		try {
@@ -197,6 +201,7 @@ public class Client extends Thread {
 	 * @param socket   communication socket between client peer and server peer
 	 * @param bitfield the server's bitfield as a byte[]
 	 */
+
 	private void sendServerBitfield(Socket socket, byte[] bitfield) {
 		try {
 			ObjectOutputStream outStream = new ObjectOutputStream(socket.getOutputStream());
@@ -212,6 +217,7 @@ public class Client extends Thread {
 	 * 
 	 * @param array byte array to print as binary
 	 */
+
 	private void printByteArrayAsBinary(byte[] array) {
 		for (byte b : array) {
 			for (int i = 7; i >= 0; i--) {
@@ -440,9 +446,8 @@ public class Client extends Thread {
 
 	/**
      * Function to extract message type
-     * 
+	 * 
      * @param message message byte array containing message header
-
      * @return int representing type of message received 
      */
 
@@ -458,6 +463,7 @@ public class Client extends Thread {
 	 * 
 	 * @param socket   communication socket between client peer and server peer
 	 */
+	
 	private byte[] receiveServerMessage(Socket socket) {
 		byte[] message = null;
 		try {
