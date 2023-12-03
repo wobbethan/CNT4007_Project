@@ -13,7 +13,7 @@ public class Server extends Thread {
 	private int portNum;
 	private int peerId;
 	private HashMap<Integer, String[]> neighboringPeers;
-	private byte[] bitfield; // TODO: maybe convert this back to be a boolean array
+	private byte[] bitfield; ///// TODO: maybe convert this back to be a boolean array
 	private Logger logger;
 	private boolean[] convertedBitField;
 
@@ -97,22 +97,19 @@ public class Server extends Thread {
 							logger.logRequestReceived(clientId, index);
 
 							// Return have message if server has piece
-							//if(convertedBitField[index]){
+							if(convertedBitField[index]){
 								sendHaveMessage(socket, index);
-							//}
+								// TODO Send File
+							}
 						}
-
-						// Break to prevent infinite loop
-						break;
 						
 					}
 					// Log reception of not interested message 
-					logger.logReceivingNotInterestedMessage(clientId);
 
 					
 				}
 				// If the client is not interested
-				else if(messageType == 3){
+				if(messageType == 3){
 					// Log reception of not interested message 
 					logger.logReceivingNotInterestedMessage(clientId);
 				}
@@ -138,8 +135,8 @@ public class Server extends Thread {
 	private void sendHaveMessage(Socket socket, int index) {
 		try {
 			ObjectOutputStream outStream = new ObjectOutputStream(socket.getOutputStream());
-			byte[] message = createMessage(MIN_PRIORITY, index);
-			outStream.writeObject(4);
+			byte[] message = createMessage(4, index);
+			outStream.writeObject(message);
 		} catch (IOException e) {
 			System.err.println(e);
 		}

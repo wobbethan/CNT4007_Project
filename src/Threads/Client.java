@@ -86,23 +86,24 @@ public class Client extends Thread {
 						int missingPiece = checkHasFullFile();
 
 						// -1 return means full file
-						if(missingPiece == -1){break;}
+						if(missingPiece == -1 || hasFullFile.get() == true){
+							break;
+						}
 
 						//Send request for missing piece
 						sendRequestMessage(socket, missingPiece);
 
-						// Receive response //! Broken, at this point server should send back 
-											//! 'Have' message , verified with type == 4 then makes logs
-						//byte[] serverResponse = receiveServerMessage(socket); //! Broken
-						//int messageType = extractType(serverResponse); //! Broken
+						// Receive response 
+						byte[] serverResponse = receiveServerMessage(socket); 
+						int messageType = extractType(serverResponse);
 						
 						//Log response received
-						//if(messageType == 4){ //! Broken
+						if(messageType == 4){
 							logger.logReceivingHaveMessage(serverId, missingPiece);
 							logger.logDownloadingPiece(serverId, missingPiece);
 							// TODO Get file
 							addPieceToBitfield(missingPiece);
-						//} //! Broken
+						} 
 						
 
 						
