@@ -77,18 +77,18 @@ public class peerProcess extends Thread {
 
             // create and run server thread only
             Server serverThread = new Server(peer.listeningPort, peer.peerID, neighboringPeers,
-                    convertBitfieldToByteArray(peer.fileSize, peer.pieceSize), peer.logger);
+                    convertBitfieldToByteArray(bitfield), peer.logger);
             serverThread.start();
         } else {
             // TODO: create new empty piece hashmap
 
             // create and run server thread
             Server serverThread = new Server(peer.listeningPort, peer.peerID, neighboringPeers,
-                    convertBitfieldToByteArray(peer.fileSize, peer.pieceSize), peer.logger);
+                    convertBitfieldToByteArray(bitfield), peer.logger);
             serverThread.start();
 
             // create and run client thread
-            Client clientThread = new Client(peer.peerID, neighboringPeers, convertBitfieldToByteArray(peer.fileSize, peer.pieceSize), peer.logger, peer.hasFullFile);
+            Client clientThread = new Client(peer.peerID, neighboringPeers, convertBitfieldToByteArray(bitfield), peer.logger, peer.hasFullFile, (int)(Math.ceil((peer.fileSize/peer.pieceSize))));
             clientThread.start();
         }
     }
@@ -134,7 +134,7 @@ public class peerProcess extends Thread {
      * @param pieceSize size of piece in bytes, grabbed from config file
      * @return byte array representing the PeerProcess's bitfield
      */
-    public static byte[] convertBitfieldToByteArray(int fileSize, int pieceSize) {
+    public static byte[] booleanArrayToByteArray(int fileSize, int pieceSize) {
         byte[] byteArray = new byte[(int) Math.ceil(fileSize / pieceSize / 8)];
 
         for (int i = 0; i < bitfield.length; i += 8) {
@@ -148,6 +148,22 @@ public class peerProcess extends Thread {
             }
 
             byteArray[i / 8] = elem;
+        }
+
+        return byteArray;
+    }
+
+
+    private static byte[] convertBitfieldToByteArray(boolean[] booleanArray) {
+        int numBytes = (int) Math.ceil(booleanArray.length / 8.0);
+        byte[] byteArray = new byte[numBytes];
+
+        for (int i = 0; i < booleanArray.length; i++) {
+            if (booleanArray[i]) {
+                int byteIndex = i / 8;
+                int bitIndex = 7 - (i % 8);
+                byteArray[byteIndex] |= (1 << bitIndex);
+            }
         }
 
         return byteArray;

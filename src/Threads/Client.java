@@ -15,19 +15,21 @@ import Messages.Handshake;
 
 public class Client extends Thread {
 	private int peerID;
+	private int expectedNumPieces;
 	private HashMap<Integer, String[]> neighboringPeers;
 	private byte[] bitfield; ///// TODO: maybe convert this back to be a boolean array
 	private boolean[] convertedBitField;
 	private Logger logger;
 	private AtomicBoolean hasFullFile;
 
-	public Client(int peerID, HashMap<Integer, String[]> neighboringPeers, byte[] bitfield, Logger logger, AtomicBoolean hasFullFile) {
+	public Client(int peerID, HashMap<Integer, String[]> neighboringPeers, byte[] bitfield, Logger logger, AtomicBoolean hasFullFile, int expectedNumPieces) {
 		this.peerID = peerID;
 		this.neighboringPeers = neighboringPeers;
 		this.bitfield = bitfield;
 		this.logger = logger;
 		this.hasFullFile = hasFullFile;
 		this.convertedBitField = byteArrayToBooleanArray(bitfield);
+		this.expectedNumPieces = expectedNumPieces;
 	}
 
 	// FIXME: when a client spawns, it'll only connect to the servers that
@@ -43,17 +45,16 @@ public class Client extends Thread {
 					continue;
 
 				Socket socket = new Socket(neighboringPeers.get(id)[0], Integer.parseInt(neighboringPeers.get(id)[1]));
-				InputStream inputStream = socket.getInputStream();
-
+				//InputStream inputStream = socket.getInputStream();
+					
 				// send handshake to server
 				Handshake clientHandshake = new Handshake(peerID);
 				sendServerHandshake(socket, clientHandshake.getHandshakeAsByteArray());
-
+				
 				// receive server handshake
 				byte[] serverHandshake = receiveServerHandshake(socket);
-
 				String serverTranslated = new String(serverHandshake, "US-ASCII");
-
+				
 				// check handshake validity (correct format)
 				if (!serverTranslated.substring(0, 28).equals("P2PFILESHARINGPROJ0000000000")) {
 					System.err.println("Invalid handshake format recieved from server");
@@ -78,70 +79,42 @@ public class Client extends Thread {
 				byte[] serverBitfield = extractPayload(serverBitfieldMessage);
 				logger.logBitfieldReceived(serverId);
 
-				// // loop of sending/receiving messages
 
-				// // while client does not have full file
-				// if(!hasFullFile.get()){
-				// 	sendInterestedMessage(socket);
-				// 	while(!hasFullFile.get()){
-				// 		// get index of missing piece
-				// 		int missingPiece = checkHasFullFile();
-
-				// 		// -1 return means full file
-				// 		if(missingPiece == -1 || hasFullFile.get() == true){
-				// 			break;
-				// 		}
-
-				// 		//Send request for missing piece
-				// 		sendRequestMessage(socket, missingPiece);
-
-				// 		// Receive response 
-				// 		byte[] serverResponse = receiveServerMessage(socket); 
-				// 		int messageType = extractType(serverResponse);
-						
-				// 		//Log response received
-				// 		if(messageType == 4){
-				// 			logger.logReceivingHaveMessage(serverId, missingPiece);
-				// 			logger.logDownloadingPiece(serverId, missingPiece);
-				// 			// TODO Get file
-				// 			addPieceToBitfield(missingPiece);
-				// 		} 
-						
-
-						
-				// 	}
-
-				// }
-
-				// //When client has full file send not interested
-				// logger.logDownloadCompletion();
-				// sendNotInterestedMessage(socket);
+			
 
 				// Loop for every neightbor
-				for (int key : neighboringPeers.keySet()) {
-					// set current peer = to value in neighboring peers
-					int currentPeer = key;
+				//for (int key : neighboringPeers.keySet()) {
 
-					// Open socket between this peerprocess and neighbor
-					//Socket socket = new Socket(neighboringPeers.get(id)[0], Integer.parseInt(neighboringPeers.get(id)[1]));
-					//InputStream inputStream = socket.getInputStream();
+					int currentPeer = serverId;
 
-					//if socket has a message to be read
-					if(inputStream.available() > 0){
-						//Receieve message
-				 		byte[] serverResponse = receiveServerMessage(socket); 
-				 		int messageType = extractType(serverResponse);
+					for(int i = 0; i < expectedNumPieces; i++){
 
-						 if(messageType == 6){
+						byte[] serverResponse = receiveServerMessage(socket); 
+						int messageType = extractType(serverResponse);
+
+						if(messageType == 4){
 							// Get index for requested piece
-							byte[] payload = extractPayload(clientMessage);
+							byte[] payload = extractPayload(serverResponse);
 							int index = byteArrayToInt(payload);
-							logger.logRequestReceived(clientId, index);
-							
+							logger.logReceivingHaveMessage(currentPeer, index);
 
+							if(!convertedBitField[index]){
+								sendInterestedMessage(socket);
+								logger.logDownloadingPiece(currentPeer ,index);
+							}
+							else{
+								sendNotInterestedMessage(socket);
+							}
+
+						}
+								
 					}
-
+				
+				//}
 					
+				
+				if(hasFullFile.get()){
+					logger.logDownloadCompletion();
 				}
 
 
@@ -461,8 +434,8 @@ public class Client extends Thread {
      */
 
     private static boolean[] byteArrayToBooleanArray(byte[] bitfield) {
-        boolean[] booleanBitField = new boolean[bitfield.length * 8];
 
+        boolean[] booleanBitField = new boolean[bitfield.length * 8];
         for (int i = 0; i < bitfield.length; i++) {
             for (int j = 0; j < 8; j++) {
                 booleanBitField[i * 8 + j] = (bitfield[i] & (1 << (7 - j))) != 0;
@@ -505,5 +478,27 @@ public class Client extends Thread {
 
 		return message;
 	}
+
+		/**
+     * Function to convert byteArray to int
+     * 
+     * @param byteArray byte array representing an int as 4 bytes
+
+     * @return int representation
+     */
+
+	 public static int byteArrayToInt(byte[] byteArray) {
+        if (byteArray.length != 4) {
+            throw new IllegalArgumentException("Byte array must have length 4");
+        }
+
+        int result = 0;
+        for (int i = 0; i < 4; i++) {
+            result |= (byteArray[i] & 0xFF) << ((3 - i) * 8);
+        }
+
+        return result;
+    }
+
 
 }

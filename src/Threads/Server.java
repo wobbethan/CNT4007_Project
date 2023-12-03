@@ -72,47 +72,6 @@ public class Server extends Thread {
 				byte[] clientBitfield = extractPayload(clientBitfieldMessage);
 				logger.logBitfieldReceived(clientId);
 
-				// // loop of sending pieces / receiving request messages
-
-				// // Receive first message (should be interested or not interested)
-				// byte[] clientMessage = receiveClientMessage(socket);
-				// int messageType = extractType(clientMessage);
-
-				// // If the client is interested
-				// if(messageType == 2){
-				// 	// Log reception of interested message
-				// 	logger.logReceivingInterestedMessage(clientId);
-
-				// 	// Until client sends not interested 
-				// 	while (messageType != 3){
-
-				// 		// Get next message
-				// 		clientMessage = receiveClientMessage(socket);
-				// 		messageType = extractType(clientMessage);
-
-				// 		if(messageType == 6){
-				// 			// Get index for requested piece
-				// 			byte[] payload = extractPayload(clientMessage);
-				// 			int index = byteArrayToInt(payload);
-				// 			logger.logRequestReceived(clientId, index);
-
-				// 			// Return have message if server has piece
-				// 			if(convertedBitField[index]){
-				// 				sendHaveMessage(socket, index);
-				// 				// TODO Send File
-				// 			}
-				// 		}
-						
-				// 	}
-				// 	// Log reception of not interested message 
-
-					
-				//\\\ }
-				// // If the client is not interested
-				// if(messageType == 3){
-				// 	// Log reception of not interested message 
-				// 	logger.logReceivingNotInterestedMessage(clientId);
-				// }
 
 				// Loop for every neighbor	
 				for (int key : neighboringPeers.keySet()) {
@@ -120,7 +79,7 @@ public class Server extends Thread {
 					int currentPeer = key;
 
 					// for each piece in bitfield 
-					for(int index = 0; index < convertedBitField.length;index++){
+					for(int index = 0; index < convertedBitField.length; index++){
 
 						//if server has piece
 						if(convertedBitField[index]){
