@@ -78,13 +78,18 @@ public class Client extends Thread {
 				byte[] serverBitfieldMessage = receiveServerBitfieldMessage(socket);
 				byte[] serverBitfield = extractPayload(serverBitfieldMessage);
 				logger.logBitfieldReceived(serverId);
-
-
-			
-
+				
+				
+				
+				
 				// Loop for every neightbor
-				//for (int key : neighboringPeers.keySet()) {
+				for (int key : neighboringPeers.keySet()) {
 
+					if(hasFullFile.get()){
+						throw new ThreadDeath();
+
+					}
+					
 					int currentPeer = serverId;
 
 					for(int i = 0; i < expectedNumPieces; i++){
@@ -101,6 +106,7 @@ public class Client extends Thread {
 							if(!convertedBitField[index]){
 								sendInterestedMessage(socket);
 								logger.logDownloadingPiece(currentPeer ,index);
+								addPieceToBitfield(index);
 							}
 							else{
 								sendNotInterestedMessage(socket);
@@ -110,24 +116,9 @@ public class Client extends Thread {
 								
 					}
 				
-				//}
+				}
 					
 				
-				if(hasFullFile.get()){
-					logger.logDownloadCompletion();
-				}
-
-
-
-				// TODO: add new client-server connection to peer list I think
-
-				// TODO: maybe find some way to track all peers that have a file
-
-				// TODO: spawn send message thread
-
-				// TODO: spawn request piece thread
-
-				// TODO: spawn receive message thread
 
 			} catch (ConnectException e) {
 				// don't log failed connection message

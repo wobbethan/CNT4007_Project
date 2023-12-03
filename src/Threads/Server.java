@@ -98,6 +98,7 @@ public class Server extends Thread {
 							// Not interested
 							else if (messageType == 3){
 								logger.logReceivingNotInterestedMessage(currentPeer);
+								break;
 							}
 
 						}
