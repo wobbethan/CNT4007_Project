@@ -6,7 +6,6 @@ import java.nio.*;
 import java.nio.channels.*;
 import java.util.*;
 import FileIO.Logger;
-
 import Messages.Handshake;
 
 public class Server extends Thread {
@@ -14,16 +13,25 @@ public class Server extends Thread {
 	private int peerId;
 	private HashMap<Integer, String[]> neighboringPeers;
 	private byte[] bitfield; ///// TODO: maybe convert this back to be a boolean array
-	private Logger logger;
+	private static Logger logger;
 	private boolean[] convertedBitField;
+	private static  ArrayList<Integer> connectedClientIds;
+	private static int optimisticallyUnchokedNeighbor;
+	private static Random rng;
+	private static Timer OUNtimer;
+	private static int OptimisticUnchokingInterval;
 
-	public Server(int portNum, int peerId, HashMap<Integer, String[]> neighboringPeers, byte[] bitfield, Logger logger) {
+	public Server(int portNum, int peerId, HashMap<Integer, String[]> neighboringPeers, byte[] bitfield, Logger logger, int OUNinterval) {
 		this.portNum = portNum;
 		this.peerId = peerId;
 		this.neighboringPeers = neighboringPeers;
 		this.bitfield = bitfield;
 		this.logger = logger;
 		this.convertedBitField = byteArrayToBooleanArray(bitfield);
+		connectedClientIds = new ArrayList<>();
+		rng = new Random();
+		OUNtimer = new Timer();
+		OptimisticUnchokingInterval = OUNinterval;
 	}
 
 	@Override
@@ -61,6 +69,7 @@ public class Server extends Thread {
 					continue;
 				}
 
+				connectedClientIds.add(clientId);
 				logger.logTCPConnection(clientId);
 
 				// send server's bitfield to client
@@ -72,8 +81,12 @@ public class Server extends Thread {
 				byte[] clientBitfield = extractPayload(clientBitfieldMessage);
 				logger.logBitfieldReceived(clientId);
 
+				// set timer for optimistically unchoked neighbor
+				optimisticallyUnchokedNeighbor = clientId;
+				OUNtimer.schedule(new setOptimisticallyUnchokedNeighbor(), OptimisticUnchokingInterval * 1000);
 
 				// Loop for every neighbor	
+				outerloop:
 				for (int key : neighboringPeers.keySet()) {
 					// set current peer = to value in neighboring peers
 					int currentPeer = key;
@@ -98,7 +111,7 @@ public class Server extends Thread {
 							// Not interested
 							else if (messageType == 3){
 								logger.logReceivingNotInterestedMessage(currentPeer);
-								break;
+								break outerloop;
 							}
 
 						}
@@ -426,6 +439,18 @@ public class Server extends Thread {
         }
 
         return booleanBitField;
+    }
+
+	// Timer task to periodically determine optimistically unchoked neighbor
+	static class setOptimisticallyUnchokedNeighbor extends TimerTask {
+        @Override
+        public void run() {
+            int newPeerIndex = rng.nextInt(connectedClientIds.size());
+			optimisticallyUnchokedNeighbor = connectedClientIds.get(newPeerIndex);
+			logger.logChangeOptimisticallyUnchokedNeighbor(optimisticallyUnchokedNeighbor);
+
+			OUNtimer.schedule(new setOptimisticallyUnchokedNeighbor(), OptimisticUnchokingInterval * 1000);
+        }
     }
 
 }

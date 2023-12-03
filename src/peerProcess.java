@@ -77,14 +77,14 @@ public class peerProcess extends Thread {
 
             // create and run server thread only
             Server serverThread = new Server(peer.listeningPort, peer.peerID, neighboringPeers,
-                    convertBitfieldToByteArray(bitfield), peer.logger);
+                    convertBitfieldToByteArray(bitfield), peer.logger, peer.OptimisticUnchokingInterval);
             serverThread.start();
         } else {
             // TODO: create new empty piece hashmap
 
             // create and run server thread
             Server serverThread = new Server(peer.listeningPort, peer.peerID, neighboringPeers,
-                    convertBitfieldToByteArray(bitfield), peer.logger);
+                    convertBitfieldToByteArray(bitfield), peer.logger, peer.OptimisticUnchokingInterval);
             serverThread.start();
 
             // create and run client thread
