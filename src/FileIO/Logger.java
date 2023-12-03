@@ -134,4 +134,24 @@ public class Logger {
         logMessage(message);
     }
 
+    // NOTE: Used for testing purposes
+    public void logBitfieldSent(int neighbor) {
+      String message = "[" + fetchCurrentTime() + "]: Peer " + peerId + " has sent it's bitfield to "
+                + neighbor + ".\n";
+        logMessage(message);
+    }
+    
+    // NOTE: Used for testing purposes
+    public void logBitfieldReceived(int neighbor) {
+      String message = "[" + fetchCurrentTime() + "]: Peer " + peerId + " has recieved a bitfield from "
+                + neighbor + ".\n";
+        logMessage(message);
+    }
+
+        // NOTE: Used for testing purposes
+    public void logRequestReceived(int neighbor, int index) {
+      String message = "[" + fetchCurrentTime() + "]: Peer " + peerId + " has recieved a request from "
+                + neighbor + " for piece " + (index)+ ".\n";
+        logMessage(message);
+    }
 }

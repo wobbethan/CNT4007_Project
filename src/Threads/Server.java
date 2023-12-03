@@ -13,8 +13,9 @@ public class Server extends Thread {
 	private int portNum;
 	private int peerId;
 	private HashMap<Integer, String[]> neighboringPeers;
-	private byte[] bitfield; // TODO: maybe convert this back to be a boolean array
+	private byte[] bitfield; ///// TODO: maybe convert this back to be a boolean array
 	private Logger logger;
+	private boolean[] convertedBitField;
 
 	public Server(int portNum, int peerId, HashMap<Integer, String[]> neighboringPeers, byte[] bitfield, Logger logger) {
 		this.portNum = portNum;
@@ -22,6 +23,7 @@ public class Server extends Thread {
 		this.neighboringPeers = neighboringPeers;
 		this.bitfield = bitfield;
 		this.logger = logger;
+		this.convertedBitField = byteArrayToBooleanArray(bitfield);
 	}
 
 	@Override
@@ -63,9 +65,50 @@ public class Server extends Thread {
 
 				// send server's bitfield to client
 				sendClientBitfield(socket, bitfield);
+				logger.logBitfieldSent(clientId);
 
 				// receive bitfield from client
-				byte[] clientBitfield = receiveClientBitfield(socket);
+				byte[] clientBitfieldMessage = receiveClientBitfield(socket);
+				byte[] clientBitfield = extractPayload(clientBitfieldMessage);
+				logger.logBitfieldReceived(clientId);
+
+
+				// Loop for every neighbor	
+				for (int key : neighboringPeers.keySet()) {
+					// set current peer = to value in neighboring peers
+					int currentPeer = key;
+
+					// for each piece in bitfield 
+					for(int index = 0; index < convertedBitField.length; index++){
+
+						//if server has piece
+						if(convertedBitField[index]){
+							// send have
+							sendHaveMessage(socket, index);
+
+							// receive client response, should be interested or not interested
+							byte[] clientMessage = receiveClientMessage(socket);
+							int messageType = extractType(clientMessage);
+
+							// Interested
+							if(messageType == 2){
+								logger.logReceivingInterestedMessage(clientId);
+								// TODO send file
+							}
+							// Not interested
+							else if (messageType == 3){
+								logger.logReceivingNotInterestedMessage(currentPeer);
+								break;
+							}
+
+						}
+
+					}
+				}
+
+
+				
+
 
 				// TODO: log tcp connection established
 
@@ -82,6 +125,16 @@ public class Server extends Thread {
 			System.err.println(e);
 		}
 
+	}
+
+	private void sendHaveMessage(Socket socket, int index) {
+		try {
+			ObjectOutputStream outStream = new ObjectOutputStream(socket.getOutputStream());
+			byte[] message = createMessage(4, index);
+			outStream.writeObject(message);
+		} catch (IOException e) {
+			System.err.println(e);
+		}
 	}
 
 	/**
@@ -149,10 +202,46 @@ public class Server extends Thread {
 	private void sendClientBitfield(Socket socket, byte[] bitfield) {
 		try {
 			ObjectOutputStream outStream = new ObjectOutputStream(socket.getOutputStream());
-			outStream.writeObject(bitfield);
+			byte[] generatedMessage = createMessage(5, bitfield);
+			outStream.writeObject(generatedMessage);
 		} catch (IOException e) {
 			System.err.println(e);
 		}
+	}
+
+	/**
+	 * sends the client peer a bitfield message from the server peer over the socket
+	 * 
+	 * @param socket   communication socket between client peer and server peer
+	 * @param bitfield the server's bitfield as a byte[]
+	 */
+	private void sendClientPiece(Socket socket, byte[] bitfield) {
+		try {
+			ObjectOutputStream outStream = new ObjectOutputStream(socket.getOutputStream());
+			byte[] generatedMessage = createMessage(5, bitfield);
+			outStream.writeObject(generatedMessage);
+		} catch (IOException e) {
+			System.err.println(e);
+		}
+	}
+
+	/**
+	 * sends the client peer a bitfield message from the server peer over the socket
+	 * 
+	 * @param socket   communication socket between client peer and server peer
+	 */
+	private byte[] receiveClientMessage(Socket socket) {
+		byte[] message = null;
+		try {
+			ObjectInputStream inStream = new ObjectInputStream(socket.getInputStream());
+			message = (byte[]) inStream.readObject();
+		} catch (IOException e) {
+			System.err.println(e);
+		} catch (ClassNotFoundException e) {
+			System.err.println(e);
+		}
+
+		return message;
 	}
 
 	/**
@@ -160,6 +249,7 @@ public class Server extends Thread {
 	 * 
 	 * @param array byte array to print as binary
 	 */
+
 	private void printByteArrayAsBinary(byte[] array) {
 		for (byte b : array) {
 			for (int i = 7; i >= 0; i--) {
@@ -171,5 +261,171 @@ public class Server extends Thread {
 
 		System.out.println();
 	}
+
+	/**
+     * First variant of function to be used for messages for the first 4 message
+     * types
+     * 
+     * @param type size of file in bytes, grabbed from config file
+     * @return byte array representing a message sent by a peer process
+     */
+
+    private static byte[] createMessage(int type) {
+
+        int size = 5;
+
+        // create message array
+        byte[] message = new byte[5];
+
+        // write size
+        message[0] = 0;
+        message[1] = 0;
+        message[2] = 0;
+        message[3] = (byte) size;
+
+        // write message type
+        message[4] = (byte) type;
+
+        return message;
+
+    }
+
+    /**
+     * Second variant of function to be used for messages for the "have" and
+     * "request" message types
+     * 
+     * @param type  4 for confirming having a piece, 6 for requesting piece
+     * @param index index of piece
+     * @return byte array representing a message sent by a peer process
+     */
+
+    private static byte[] createMessage(int type, int index) {
+
+        int size = 9;
+
+        // create message array
+        byte[] message = new byte[size];
+
+        // write size
+        message[0] = 0;
+        message[1] = 0;
+        message[2] = 0;
+        message[3] = (byte) size;
+
+        // write message type
+        message[4] = (byte) type;
+
+        message[5] = (byte) (index >> 24);
+        message[6] = (byte) (index >> 16);
+        message[7] = (byte) (index >> 8);
+        message[8] = (byte) index;
+
+        return message;
+
+    }
+
+    /**
+     * Third variant of function to be used for messages for the "bitfield" and
+     * "piece" message types
+     * 
+     * @param type    size of file in bytes, grabbed from config file
+     * @param payload payload for messages of type 5 (where payload is bitfield) and
+     *                7 (where payload is a piece)
+     * @return byte array representing a message sent by a peer process
+     */
+
+    private static byte[] createMessage(int type, byte[] payload) {
+
+        int size = 5 + payload.length;
+
+        // create message array
+        byte[] message = new byte[size];
+
+        // write size
+        message[0] = (byte) (size >> 24);
+        message[1] = (byte) (size >> 16);
+        message[2] = (byte) (size >> 8);
+        message[3] = (byte) size;
+
+        // write message type
+        message[4] = (byte) type;
+
+        for (int i = 0; i < payload.length; i++) {
+            message[i + 5] = payload[i];
+        }
+
+        return message;
+
+    }
+
+	/**
+     * Function to extract payload from message
+     * payload can be bitfield or piece
+     * 
+     * @param message message byte array containing message header and payload
+
+     * @return byte array representing the payload from the message
+     */
+
+	 private static byte[] extractPayload(byte[] message) {
+
+        byte[] payload = Arrays.copyOfRange(message, 5, message.length);
+
+		return payload;
+    }
+
+	/**
+     * Function to extract message type
+     * 
+     * @param message message byte array containing message header
+
+     * @return int representing type of message received 
+     */
+
+	 private static int extractType(byte[] message) {
+
+		// message type resides in 5th index
+		int type = message[4] & 0xFF; 
+		return type;
+    }
+
+	/**
+     * Function to convert byteArray to int
+     * 
+     * @param byteArray byte array representing an int as 4 bytes
+
+     * @return int representation
+     */
+
+	public static int byteArrayToInt(byte[] byteArray) {
+        if (byteArray.length != 4) {
+            throw new IllegalArgumentException("Byte array must have length 4");
+        }
+
+        int result = 0;
+        for (int i = 0; i < 4; i++) {
+            result |= (byteArray[i] & 0xFF) << ((3 - i) * 8);
+        }
+
+        return result;
+    }
+
+	/**
+     * Converts byte[] bitfield to boolean representation
+     * 
+     * @return boolean representation of bitfield
+     */
+
+	 private static boolean[] byteArrayToBooleanArray(byte[] bitfield) {
+        boolean[] booleanBitField = new boolean[bitfield.length * 8];
+
+        for (int i = 0; i < bitfield.length; i++) {
+            for (int j = 0; j < 8; j++) {
+                booleanBitField[i * 8 + j] = (bitfield[i] & (1 << (7 - j))) != 0;
+            }
+        }
+
+        return booleanBitField;
+    }
 
 }

@@ -7,6 +7,9 @@ import FileIO.*;
 import Threads.Client;
 import Threads.Server;
 
+//Used to create a shared boolean variable between child and parent threads
+import java.util.concurrent.atomic.AtomicBoolean;
+
 public class peerProcess extends Thread {
     private int peerID;
     private Logger logger;
@@ -23,8 +26,8 @@ public class peerProcess extends Thread {
     private int numPeers;
     private static HashMap<Integer, String[]> neighboringPeers; // key = peerID, value = peerInfo config string tokens
     private String hostName;
-    private int listeningPort;
-    private boolean hasFullFile;
+    private int listeningPort; 
+    private AtomicBoolean hasFullFile = new AtomicBoolean(false);
     private static boolean[] bitfield;
 
     public peerProcess(int peerID) {
@@ -54,14 +57,17 @@ public class peerProcess extends Thread {
         peer.numPeers = neighboringPeers.size();
         peer.hostName = neighboringPeers.get(peer.peerID)[0];
         peer.listeningPort = Integer.parseInt(neighboringPeers.get(peer.peerID)[1]);
-        peer.hasFullFile = neighboringPeers.get(peer.peerID)[2].equals("1") ? true : false;
+
+        // Modified statement to work with Atomic boolean
+        peer.hasFullFile.set(neighboringPeers.get(peer.peerID)[2].equals("1") ? true : false);
 
         // spin up logger
         peer.logger = new Logger(peer.peerID);
 
         bitfield = new boolean[(int) Math.ceil(peer.fileSize / peer.pieceSize)];
 
-        if (peer.hasFullFile) {
+        //.get() extracts boolean value from atomic
+        if (peer.hasFullFile.get()) {
             // set entire bitfield to 1s
             for (int i = 0; i < bitfield.length; i++) {
                 bitfield[i] = true;
@@ -71,19 +77,18 @@ public class peerProcess extends Thread {
 
             // create and run server thread only
             Server serverThread = new Server(peer.listeningPort, peer.peerID, neighboringPeers,
-                    convertBitfieldToByteArray(peer.fileSize, peer.pieceSize), peer.logger);
+                    convertBitfieldToByteArray(bitfield), peer.logger);
             serverThread.start();
         } else {
             // TODO: create new empty piece hashmap
 
             // create and run server thread
             Server serverThread = new Server(peer.listeningPort, peer.peerID, neighboringPeers,
-                    convertBitfieldToByteArray(peer.fileSize, peer.pieceSize), peer.logger);
+                    convertBitfieldToByteArray(bitfield), peer.logger);
             serverThread.start();
 
             // create and run client thread
-            Client clientThread = new Client(peer.peerID, neighboringPeers,
-                    convertBitfieldToByteArray(peer.fileSize, peer.pieceSize), peer.logger);
+            Client clientThread = new Client(peer.peerID, neighboringPeers, convertBitfieldToByteArray(bitfield), peer.logger, peer.hasFullFile, (int)(Math.ceil((peer.fileSize/peer.pieceSize))));
             clientThread.start();
         }
     }
@@ -106,7 +111,7 @@ public class peerProcess extends Thread {
      */
 
     public int checkHasFullFile() {
-        if (hasFullFile) {
+        if (hasFullFile.get()) {
             return -1;
         }
 
@@ -118,7 +123,7 @@ public class peerProcess extends Thread {
         }
 
         // peer process proven to have full file
-        hasFullFile = true;
+        hasFullFile.set(true);
         return -1;
     }
 
@@ -129,7 +134,7 @@ public class peerProcess extends Thread {
      * @param pieceSize size of piece in bytes, grabbed from config file
      * @return byte array representing the PeerProcess's bitfield
      */
-    public static byte[] convertBitfieldToByteArray(int fileSize, int pieceSize) {
+    public static byte[] booleanArrayToByteArray(int fileSize, int pieceSize) {
         byte[] byteArray = new byte[(int) Math.ceil(fileSize / pieceSize / 8)];
 
         for (int i = 0; i < bitfield.length; i += 8) {
@@ -148,101 +153,24 @@ public class peerProcess extends Thread {
         return byteArray;
     }
 
-    // TODO Function to determine type of message needed
-    ;
 
-    /**
-     * First variant of function to be used for messages for the first 4 message
-     * types
-     * 
-     * @param type size of file in bytes, grabbed from config file
-     * @return byte array representing a message sent by a peer process
-     */
-    public static byte[] createMessage(int type) {
+    private static byte[] convertBitfieldToByteArray(boolean[] booleanArray) {
+        int numBytes = (int) Math.ceil(booleanArray.length / 8.0);
+        byte[] byteArray = new byte[numBytes];
 
-        int size = 5;
-
-        // create message array
-        byte[] message = new byte[5];
-
-        // write size
-        message[0] = 0;
-        message[1] = 0;
-        message[2] = 0;
-        message[3] = (byte) size;
-
-        // write message type
-        message[4] = (byte) type;
-
-        return message;
-
-    }
-
-    /**
-     * Second variant of function to be used for messages for the "have" and
-     * "request" message types
-     * 
-     * @param type  size of file in bytes, grabbed from config file
-     * @param index payload for messages of type 4 and 6
-     * @return byte array representing a message sent by a peer process
-     */
-    public static byte[] createMessage(int type, int index) {
-
-        int size = 9;
-
-        // create message array
-        byte[] message = new byte[size];
-
-        // write size
-        message[0] = 0;
-        message[1] = 0;
-        message[2] = 0;
-        message[3] = (byte) size;
-
-        // write message type
-        message[4] = (byte) type;
-
-        message[5] = (byte) (index >> 24);
-        message[6] = (byte) (index >> 16);
-        message[7] = (byte) (index >> 8);
-        message[8] = (byte) index;
-
-        return message;
-
-    }
-
-    /**
-     * Third variant of function to be used for messages for the "bitfield" and
-     * "piece" message types
-     * 
-     * @param type    size of file in bytes, grabbed from config file
-     * @param payload payload for messages of type 5 (where payload is bitfield) and
-     *                7 (where payload is a piece)
-     * @return byte array representing a message sent by a peer process
-     */
-
-    public static byte[] createMessage(int type, byte[] payload) {
-
-        int size = 5 + payload.length;
-
-        // create message array
-        byte[] message = new byte[size];
-
-        // write size
-        message[0] = (byte) (size >> 24);
-        message[1] = (byte) (size >> 16);
-        message[2] = (byte) (size >> 8);
-        message[3] = (byte) size;
-
-        // write message type
-        message[4] = (byte) type;
-
-        for (int i = 0; i < payload.length; i++) {
-            message[i + 5] = payload[i];
+        for (int i = 0; i < booleanArray.length; i++) {
+            if (booleanArray[i]) {
+                int byteIndex = i / 8;
+                int bitIndex = 7 - (i % 8);
+                byteArray[byteIndex] |= (1 << bitIndex);
+            }
         }
 
-        return message;
-
+        return byteArray;
     }
+
+    // TODO Function to determine type of message needed
+    
+
 
 }
