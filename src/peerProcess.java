@@ -4,6 +4,7 @@ import java.nio.*;
 import java.nio.channels.*;
 import java.util.*;
 import FileIO.*;
+import File_Storage.fileManager;
 import Threads.Client;
 import Threads.Server;
 
@@ -13,6 +14,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class peerProcess extends Thread {
     private int peerID;
     private Logger logger;
+    private fileManager fileManager;
+
 
     // retrieved from Common config
     private String fileName;
@@ -64,6 +67,9 @@ public class peerProcess extends Thread {
         // spin up logger
         peer.logger = new Logger(peer.peerID);
 
+        // spin up file manager
+        peer.fileManager = new fileManager(peer.peerID, peer.fileSize, peer.pieceSize, peer.logger, peer.hasFullFile.get());
+
         bitfield = new boolean[(int) Math.ceil(peer.fileSize / peer.pieceSize)];
 
         //.get() extracts boolean value from atomic
@@ -77,18 +83,18 @@ public class peerProcess extends Thread {
 
             // create and run server thread only
             Server serverThread = new Server(peer.listeningPort, peer.peerID, neighboringPeers,
-                    convertBitfieldToByteArray(bitfield), peer.logger);
+                    convertBitfieldToByteArray(bitfield), peer.logger, peer.fileManager);
             serverThread.start();
         } else {
             // TODO: create new empty piece hashmap
 
             // create and run server thread
             Server serverThread = new Server(peer.listeningPort, peer.peerID, neighboringPeers,
-                    convertBitfieldToByteArray(bitfield), peer.logger);
+                    convertBitfieldToByteArray(bitfield), peer.logger, peer.fileManager);
             serverThread.start();
 
             // create and run client thread
-            Client clientThread = new Client(peer.peerID, neighboringPeers, convertBitfieldToByteArray(bitfield), peer.logger, peer.hasFullFile, (int)(Math.ceil((peer.fileSize/peer.pieceSize))));
+            Client clientThread = new Client(peer.peerID, neighboringPeers, convertBitfieldToByteArray(bitfield), peer.logger, peer.hasFullFile, (int)(Math.ceil((peer.fileSize/peer.pieceSize))), peer.fileManager);
             clientThread.start();
         }
     }

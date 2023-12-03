@@ -6,6 +6,7 @@ import java.nio.*;
 import java.nio.channels.*;
 import java.util.*;
 import FileIO.Logger;
+import File_Storage.fileManager;
 
 //Used to create a shared boolean variable between child and parent threads
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -21,8 +22,9 @@ public class Client extends Thread {
 	private boolean[] convertedBitField;
 	private Logger logger;
 	private AtomicBoolean hasFullFile;
+	private fileManager fileManager;
 
-	public Client(int peerID, HashMap<Integer, String[]> neighboringPeers, byte[] bitfield, Logger logger, AtomicBoolean hasFullFile, int expectedNumPieces) {
+	public Client(int peerID, HashMap<Integer, String[]> neighboringPeers, byte[] bitfield, Logger logger, AtomicBoolean hasFullFile, int expectedNumPieces, fileManager fileManager) {
 		this.peerID = peerID;
 		this.neighboringPeers = neighboringPeers;
 		this.bitfield = bitfield;
@@ -30,6 +32,7 @@ public class Client extends Thread {
 		this.hasFullFile = hasFullFile;
 		this.convertedBitField = byteArrayToBooleanArray(bitfield);
 		this.expectedNumPieces = expectedNumPieces;
+		this.fileManager = fileManager;
 	}
 
 	// FIXME: when a client spawns, it'll only connect to the servers that

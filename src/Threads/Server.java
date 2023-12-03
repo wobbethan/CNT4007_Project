@@ -6,7 +6,7 @@ import java.nio.*;
 import java.nio.channels.*;
 import java.util.*;
 import FileIO.Logger;
-
+import File_Storage.fileManager;
 import Messages.Handshake;
 
 public class Server extends Thread {
@@ -16,14 +16,17 @@ public class Server extends Thread {
 	private byte[] bitfield; ///// TODO: maybe convert this back to be a boolean array
 	private Logger logger;
 	private boolean[] convertedBitField;
+	private fileManager fileManager;
 
-	public Server(int portNum, int peerId, HashMap<Integer, String[]> neighboringPeers, byte[] bitfield, Logger logger) {
+
+	public Server(int portNum, int peerId, HashMap<Integer, String[]> neighboringPeers, byte[] bitfield, Logger logger, fileManager fileManager) {
 		this.portNum = portNum;
 		this.peerId = peerId;
 		this.neighboringPeers = neighboringPeers;
 		this.bitfield = bitfield;
 		this.logger = logger;
 		this.convertedBitField = byteArrayToBooleanArray(bitfield);
+		this.fileManager = fileManager;
 	}
 
 	@Override
@@ -93,7 +96,8 @@ public class Server extends Thread {
 							// Interested
 							if(messageType == 2){
 								logger.logReceivingInterestedMessage(clientId);
-								// TODO send file
+								byte[] pieceToSend = fileManager.sendPiece(index);
+								sendClientPiece(socket,pieceToSend,index);
 							}
 							// Not interested
 							else if (messageType == 3){
@@ -215,15 +219,17 @@ public class Server extends Thread {
 	 * @param socket   communication socket between client peer and server peer
 	 * @param bitfield the server's bitfield as a byte[]
 	 */
-	private void sendClientPiece(Socket socket, byte[] bitfield) {
+	private void sendClientPiece(Socket socket, byte[] piece, int index) {
 		try {
 			ObjectOutputStream outStream = new ObjectOutputStream(socket.getOutputStream());
-			byte[] generatedMessage = createMessage(5, bitfield);
+			byte[] generatedMessage = createMessage(7, piece, index);
 			outStream.writeObject(generatedMessage);
 		} catch (IOException e) {
 			System.err.println(e);
 		}
 	}
+
+
 
 	/**
 	 * sends the client peer a bitfield message from the server peer over the socket
@@ -358,6 +364,46 @@ public class Server extends Thread {
 
     }
 
+    /**
+     * 4th variant of function to be used for messages for the 
+     * "piece" message types
+     * 
+     * @param type    size of file in bytes, grabbed from config file
+     * @param payload payload for messages of type 5 (where payload is bitfield) and
+     *                7 (where payload is a piece)
+     * @return byte array representing a message sent by a peer process
+     */
+
+	private static byte[] createMessage(int type, byte[] piece, int index) {
+		int size = 9 + piece.length;
+
+        // create message array
+        byte[] message = new byte[size];
+
+        // write size
+        message[0] = (byte) (size >> 24);
+        message[1] = (byte) (size >> 16);
+        message[2] = (byte) (size >> 8);
+        message[3] = (byte) size;
+
+        // write message type
+        message[4] = (byte) type;
+
+		// write index
+        message[5] = (byte) (index >> 24);
+        message[6] = (byte) (index >> 16);
+        message[7] = (byte) (index >> 8);
+        message[8] = (byte) index;
+
+
+		// Write piece
+        for (int i = 0; i < piece.length; i++) {
+            message[i + 9] = piece[i];
+        }
+
+        return message;
+	}
+
 	/**
      * Function to extract payload from message
      * payload can be bitfield or piece
@@ -373,6 +419,15 @@ public class Server extends Thread {
 
 		return payload;
     }
+
+	
+	private static byte[] extractPiecePayload(byte[] message) {
+
+        byte[] payload = Arrays.copyOfRange(message, 9, message.length);
+
+		return payload;
+    }
+
 
 	/**
      * Function to extract message type
